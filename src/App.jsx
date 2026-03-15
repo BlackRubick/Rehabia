@@ -14,14 +14,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/register"
-          element={
-            <ProtectedRoute role={['admin', 'doctor']}>
-              <RegisterPatientPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/register" element={<RegisterPatientPage />} />
         <Route
           path="/patient"
           element={
