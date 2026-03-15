@@ -1,70 +1,190 @@
-# Getting Started with Create React App
+# REHABIA
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Aplicación médica full-stack para rehabilitación de rodilla con inteligencia artificial y visión por computadora.
 
-## Available Scripts
+## Stack
 
-In the project directory, you can run:
+- Frontend: React + TailwindCSS + Vite
+- Backend: FastAPI (Python)
+- IA: OpenCV + MediaPipe Pose
+- Base de datos: MySQL
+- ORM: SQLAlchemy
+- Auth: JWT
 
-### `npm start`
+## Funcionalidades implementadas
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Paciente
+- Registro con datos clínicos y generación automática de ID único (`PAC-YYYY-XXXXXX`)
+- Inicio de sesión
+- Visualización de rutinas asignadas
+- Reproducción de video demostrativo previo
+- Sesión de terapia con cámara:
+  - superposición de esqueleto
+  - cálculo de ángulo cadera → rodilla → tobillo
+  - feedback visual por estado (correcto / fuera de rango)
+  - contador de repeticiones válidas e inválidas
+- Guardado de resultados en base de datos
+- Historial de sesiones
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Administrador (fisioterapeuta / quiropráctico)
+- Búsqueda de paciente por ID único
+- Visualización de historial, lesión y progreso
+- Asignación/modificación de rutina personalizada:
+  - nombre de ejercicio
+  - repeticiones objetivo
+  - rango de ángulo mínimo/máximo
+  - duración
+  - video demostrativo
+- Estadísticas y gráficos de progreso
 
-### `npm test`
+## Estructura del proyecto
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- [src/App.jsx](src/App.jsx)
+- [src/components/TherapyCamera.jsx](src/components/TherapyCamera.jsx)
+- [src/pages/AdminDashboard.jsx](src/pages/AdminDashboard.jsx)
+- [src/pages/PatientDashboard.jsx](src/pages/PatientDashboard.jsx)
+- [backend/app/main.py](backend/app/main.py)
+- [backend/app/api/v1/router.py](backend/app/api/v1/router.py)
+- [backend/app/models/patient.py](backend/app/models/patient.py)
+- [backend/app/models/routine.py](backend/app/models/routine.py)
+- [backend/app/models/session.py](backend/app/models/session.py)
+- [backend/app/models/user.py](backend/app/models/user.py)
+- [backend/app/services/pose_analyzer.py](backend/app/services/pose_analyzer.py)
 
-### `npm run build`
+## Esquema de base de datos (MySQL)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Tablas principales:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- `pacientes`
+  - `id` (PK)
+  - `unique_id`
+  - `nombre`
+  - `edad`
+  - `lesion`
+  - `rodilla_afectada`
+  - `actividad_profesion`
+  - `rango_min`
+  - `rango_max`
+  - `fecha_registro`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- `rutinas`
+  - `id` (PK)
+  - `paciente_id` (FK)
+  - `nombre_ejercicio`
+  - `repeticiones_objetivo`
+  - `angulo_objetivo`
+  - `rango_min`
+  - `rango_max`
+  - `duracion_minutos`
+  - `video_demo_url`
+  - `fecha_asignacion`
 
-### `npm run eject`
+- `sesiones`
+  - `id` (PK)
+  - `paciente_id` (FK)
+  - `rutina_id` (FK)
+  - `fecha`
+  - `repeticiones_validas`
+  - `repeticiones_invalidas`
+  - `angulo_promedio`
+  - `cumplio_objetivo`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Instalación
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 1) Frontend
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. Copia variables de entorno:
+	- `cp .env.example .env`
+2. Instala dependencias:
+	- `npm install`
+3. Ejecuta entorno de desarrollo:
+	- `npm run dev`
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+Script opcional:
 
-## Learn More
+- [scripts/setup_frontend.sh](scripts/setup_frontend.sh)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 2) Base de datos MySQL
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Ejecuta el script:
 
-### Code Splitting
+- [backend/scripts/init_db.sql](backend/scripts/init_db.sql)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### 3) Backend FastAPI
 
-### Analyzing the Bundle Size
+1. Ve al backend:
+	- `cd backend`
+2. Crea entorno virtual:
+	- `python -m venv .venv`
+3. Activa entorno virtual (Linux/macOS):
+	- `source .venv/bin/activate`
+4. Instala dependencias:
+	- `pip install -r requirements.txt`
+5. Copia variables de entorno:
+	- `cp .env.example .env`
+6. Ejecuta API:
+	- `uvicorn app.main:app --reload --port 8000`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Script opcional:
 
-### Making a Progressive Web App
+- [backend/scripts/setup_backend.sh](backend/scripts/setup_backend.sh)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### 4) Crear usuario administrador
 
-### Advanced Configuration
+Desde [backend](backend):
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- `python -m scripts.seed_admin`
 
-### Deployment
+Credenciales por defecto:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- usuario: `admin`
+- contraseña: `admin123`
 
-### `npm run build` fails to minify
+## Arranque conjunto (opcional)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Si ya configuraste frontend y backend:
+
+- [scripts/run_all.sh](scripts/run_all.sh)
+
+## Endpoints principales
+
+### Auth
+- `POST /api/v1/auth/login`
+
+### Pacientes
+- `POST /api/v1/patients/register`
+- `GET /api/v1/patients/me/routines`
+- `GET /api/v1/patients/me/sessions`
+
+### Admin
+- `GET /api/v1/admin/patients/{patient_unique_id}`
+- `POST /api/v1/admin/patients/{patient_unique_id}/routines`
+- `GET /api/v1/admin/patients/{patient_unique_id}/stats`
+
+### Sesiones
+- `POST /api/v1/sessions`
+
+### IA
+- `POST /api/v1/ai/analyze`
+
+## Flujo IA
+
+1. Detección de landmarks con MediaPipe Pose.
+2. Selección de cadera, rodilla y tobillo según lado afectado.
+3. Cálculo de ángulo con producto punto entre vectores:
+
+$$
+	heta = \arccos\left(\frac{\vec{BA} \cdot \vec{BC}}{\|\vec{BA}\|\,\|\vec{BC}\|}\right)
+$$
+
+4. Validación contra rango permitido del ejercicio.
+5. Conteo de repetición al completar ciclo de movimiento dentro de la lógica de fases.
+
+## Estado actual
+
+Proyecto base funcional, modular y escalable para continuar con:
+
+- multirrol avanzado
+- control clínico más estricto por protocolo médico
+- reportes PDF y exportación
+- tests automáticos E2E y CI/CD
