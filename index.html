@@ -11,6 +11,10 @@
   </head>
   <body class="bg-slate-950">
     <div id="root"></div>
+    <!-- MediaPipe CDN: expone window.Pose, window.Camera, window.drawConnectors, window.drawLandmarks -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
