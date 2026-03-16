@@ -16,6 +16,7 @@ export default function TherapyCamera({ routine, onFinish }) {
     status: 'idle',
     angle: 0,
   });
+  const [cameraError, setCameraError] = useState('');
   const phaseRef = useRef('up');
   const angleAccumulator = useRef([]);
 
@@ -39,7 +40,19 @@ export default function TherapyCamera({ routine, onFinish }) {
     const drawLandmarks = window.drawLandmarks;
 
     if (!PoseClass || !CameraClass || !drawConnectors || !drawLandmarks) {
-      console.error('MediaPipe no cargado. Verifica conexión a internet.');
+      setCameraError('MediaPipe no cargado. Verifica conexión a internet.');
+      setRunning(false);
+      return undefined;
+    }
+
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      setCameraError('La cámara requiere HTTPS. Accede al sitio con https:// para usar esta función.');
+      setRunning(false);
+      return undefined;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Tu navegador no permite acceso a la cámara en esta conexión. Se requiere HTTPS.');
       setRunning(false);
       return undefined;
     }
@@ -130,7 +143,10 @@ export default function TherapyCamera({ routine, onFinish }) {
       height: 540,
     });
 
-    camera.start();
+    camera.start().catch((err) => {
+      setCameraError(`No se pudo acceder a la cámara: ${err.message || err}`);
+      setRunning(false);
+    });
 
     return () => {
       camera.stop();
@@ -151,6 +167,11 @@ export default function TherapyCamera({ routine, onFinish }) {
 
   return (
     <div className="medical-card space-y-4">
+      {cameraError && (
+        <div className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+          ⚠️ {cameraError}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Módulo IA</p>
