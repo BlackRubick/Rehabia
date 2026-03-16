@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import '@mediapipe/pose';
-import '@mediapipe/camera_utils';
-import '@mediapipe/drawing_utils';
+import { Pose, POSE_CONNECTIONS } from '@mediapipe/pose';
+import { Camera } from '@mediapipe/camera_utils';
+import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 import { calculateAngle, getKneeStatus } from '../lib/poseMath';
 
 const LEFT = { hip: 23, knee: 25, ankle: 27 };
@@ -36,17 +36,7 @@ export default function TherapyCamera({ routine, onFinish }) {
   useEffect(() => {
     if (!running || !videoRef.current) return undefined;
 
-    const PoseClass = window.Pose;
-    const CameraClass = window.Camera;
-    const drawConnectors = window.drawConnectors;
-    const drawLandmarks = window.drawLandmarks;
-
-    if (!PoseClass || !CameraClass || !drawConnectors || !drawLandmarks) {
-      setRunning(false);
-      return undefined;
-    }
-
-    const pose = new PoseClass({
+    const pose = new Pose({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
     });
 
@@ -71,7 +61,7 @@ export default function TherapyCamera({ routine, onFinish }) {
       ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
       if (results.poseLandmarks) {
-        drawConnectors(ctx, results.poseLandmarks, PoseClass.POSE_CONNECTIONS, {
+        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
           color: '#38bdf8',
           lineWidth: 3,
         });
@@ -124,7 +114,7 @@ export default function TherapyCamera({ routine, onFinish }) {
       ctx.restore();
     });
 
-    const camera = new CameraClass(videoRef.current, {
+    const camera = new Camera(videoRef.current, {
       onFrame: async () => {
         await pose.send({ image: videoRef.current });
       },
