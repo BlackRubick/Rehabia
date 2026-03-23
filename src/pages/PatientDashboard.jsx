@@ -174,11 +174,19 @@ export default function PatientDashboard() {
               Antes de iniciar, revisa el movimiento recomendado.
             </p>
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-800">
-              <video
-                className="h-64 w-full bg-black object-cover"
-                controls
-                src={VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine.video_demo_url || 'https://cdn.pixabay.com/video/2019/10/24/28093-370074008_tiny.mp4'}
-              />
+              {(
+                VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine?.video_demo_url
+              ) ? (
+                <video
+                  className="h-64 w-full bg-black object-cover"
+                  controls
+                  src={VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine.video_demo_url}
+                />
+              ) : (
+                <div className="h-64 flex items-center justify-center text-slate-400">
+                  No hay video disponible para este ejercicio.
+                </div>
+              )}
             </div>
           </div>
           <TherapyCamera routine={selectedRoutine} onFinish={saveSession} />
