@@ -102,36 +102,31 @@ export default function TherapyCamera({ routine, onFinish }) {
           const status = getKneeStatus(angle, minRange, maxRange);
           angleAccumulator.current.push(angle);
 
-          setMetrics((prev) => {
-            let { repsDone, valid, invalid } = prev;
+          // Guardar el último status para saber si la repetición fue correcta
+          phaseRef.currentStatus = status;
 
-            // Sumar cada vez que status sea 'correct'
-            if (status === 'correct') valid += 1;
+          if (phaseRef.current === 'up' && angle <= minRange + 5) {
+            phaseRef.current = 'down';
+          }
 
-            if (phaseRef.current === 'up' && angle <= minRange + 5) {
-              phaseRef.current = 'down';
-            }
+          if (phaseRef.current === 'down' && angle >= maxRange - 5) {
+            phaseRef.current = 'up';
+            repsDone += 1;
+            if (phaseRef.currentStatus === 'correct') valid += 1;
+            else invalid += 1;
+          }
 
-            if (phaseRef.current === 'down' && angle >= maxRange - 5) {
-              phaseRef.current = 'up';
-              repsDone += 1;
-              // Ya no sumamos aquí, solo arriba
-              // if (status === 'correct') valid += 1;
-              // else invalid += 1;
-            }
+          const avgAngle =
+            angleAccumulator.current.reduce((sum, item) => sum + item, 0) /
+            angleAccumulator.current.length;
 
-            const avgAngle =
-              angleAccumulator.current.reduce((sum, item) => sum + item, 0) /
-              angleAccumulator.current.length;
-
-            return {
-              repsDone,
-              valid,
-              invalid,
-              avgAngle: Number(avgAngle.toFixed(2)),
-              status,
-              angle,
-            };
+          setMetrics({
+            repsDone,
+            valid,
+            invalid,
+            avgAngle: Number(avgAngle.toFixed(2)),
+            status,
+            angle,
           });
         }
       }
