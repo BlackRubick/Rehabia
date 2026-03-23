@@ -24,6 +24,15 @@ const VIDEO_MAP = {
   "desplazamiento de talón": "https://www.bing.com/videos/riverview/relatedvideo?q=+desplazamiento+de+tal%c3%b3n++video+como+se+hace&&mid=72B0A54E19717D21438372B0A54E19717D214383&FORM=VRDGAR"
 };
 
+// Función para normalizar nombres de ejercicio
+function normalizeName(name) {
+  return (name || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s+/g, ' ').trim();
+}
+
+const normalizedMap = Object.fromEntries(
+  Object.entries(VIDEO_MAP).map(([k, v]) => [normalizeName(k), v])
+);
+
 export default function PatientDashboard() {
   const [routines, setRoutines] = useState([]);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
@@ -175,7 +184,7 @@ export default function PatientDashboard() {
             </p>
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-800">
               {(() => {
-                const url = VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine?.video_demo_url;
+                const url = normalizedMap[normalizeName(selectedRoutine?.nombre_ejercicio)] || selectedRoutine?.video_demo_url;
                 if (url) {
                   return (
                     <a
