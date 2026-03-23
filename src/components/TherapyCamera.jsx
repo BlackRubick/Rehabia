@@ -105,6 +105,9 @@ export default function TherapyCamera({ routine, onFinish }) {
           setMetrics((prev) => {
             let { repsDone, valid, invalid } = prev;
 
+            // Sumar cada vez que status sea 'correct'
+            if (status === 'correct') valid += 1;
+
             if (phaseRef.current === 'up' && angle <= minRange + 5) {
               phaseRef.current = 'down';
             }
@@ -112,8 +115,9 @@ export default function TherapyCamera({ routine, onFinish }) {
             if (phaseRef.current === 'down' && angle >= maxRange - 5) {
               phaseRef.current = 'up';
               repsDone += 1;
-              if (status === 'correct') valid += 1;
-              else invalid += 1;
+              // Ya no sumamos aquí, solo arriba
+              // if (status === 'correct') valid += 1;
+              // else invalid += 1;
             }
 
             const avgAngle =
