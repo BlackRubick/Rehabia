@@ -1,7 +1,5 @@
 # REHABIA
 
-Aplicación médica full-stack para rehabilitación de rodilla con inteligencia artificial y visión por computadora.
-
 ## Stack
 
 - Frontend: React + TailwindCSS + Vite
@@ -33,7 +31,7 @@ Aplicación médica full-stack para rehabilitación de rodilla con inteligencia 
   - nombre de ejercicio
   - repeticiones objetivo
   - rango de ángulo mínimo/máximo
-  - duración
+  - duración￼
   - video demostrativo
 - Estadísticas y gráficos de progreso
 
@@ -180,11 +178,5 @@ $$
 4. Validación contra rango permitido del ejercicio.
 5. Conteo de repetición al completar ciclo de movimiento dentro de la lógica de fases.
 
-## Estado actual
 
-Proyecto base funcional, modular y escalable para continuar con:
 
-- multirrol avanzado
-- control clínico más estricto por protocolo médico
-- reportes PDF y exportación
-- tests automáticos E2E y CI/CD
