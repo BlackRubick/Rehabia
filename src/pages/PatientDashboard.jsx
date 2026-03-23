@@ -174,19 +174,36 @@ export default function PatientDashboard() {
               Antes de iniciar, revisa el movimiento recomendado.
             </p>
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-800">
-              {(
-                VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine?.video_demo_url
-              ) ? (
-                <video
-                  className="h-64 w-full bg-black object-cover"
-                  controls
-                  src={VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine.video_demo_url}
-                />
-              ) : (
-                <div className="h-64 flex items-center justify-center text-slate-400">
-                  No hay video disponible para este ejercicio.
-                </div>
-              )}
+              {(() => {
+                const url = VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine?.video_demo_url;
+                // Si es un mp4/webm, usa <video>. Si no, muestra botón para abrir en otra pestaña
+                if (url && (url.endsWith('.mp4') || url.endsWith('.webm'))) {
+                  return (
+                    <video
+                      className="h-64 w-full bg-black object-cover"
+                      controls
+                      src={url}
+                    />
+                  );
+                } else if (url) {
+                  return (
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-center text-blue-400 underline py-10"
+                    >
+                      Ver video demostrativo
+                    </a>
+                  );
+                } else {
+                  return (
+                    <div className="h-64 flex items-center justify-center text-slate-400">
+                      No hay video disponible para este ejercicio.
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
           <TherapyCamera routine={selectedRoutine} onFinish={saveSession} />
