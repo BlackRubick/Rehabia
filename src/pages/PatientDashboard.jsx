@@ -3,6 +3,27 @@ import api from '../lib/api';
 import TherapyCamera from '../components/TherapyCamera';
 import { ROM_REFERENCE } from '../lib/mockClinicalData';
 
+// Mapeo de nombre de ejercicio a URL de video
+const VIDEO_MAP = {
+  "contracción de cuádriceps": "https://www.bing.com/ck/a?!&&p=4e5a6b2ae5357f41d72810c91faf6bef7c8d2e528a3481ba9bb51d0a03a74cd7JmltdHM9MTc3NDEzNzYwMA&ptn=3&ver=2&hsh=4&fclid=2d181146-515f-6ba9-3410-05d1502a6a0a&u=a1L3ZpZGVvcy9yaXZlcnZpZXcvcmVsYXRlZHZpZGVvP3E9Y29udHJhY2NpJWMzJWIzbitkZStjdSVjMyVhMWRyaWNlcHMrdmlkZW8rJiZtaWQ9MjY2NEU2REI0NzFDNjc4Q0RFNUYyNjY0RTZEQjQ3MUM2NzhDREU1RiZGT1JNPVZBTUdaQw",
+  "elevación de pierna recta": "https://www.bing.com/videos/riverview/relatedvideo?q=elevaci%c3%b3n+de+pierna+recta++video+como+se+hace&&mid=C959CB4CA219D710069BC959CB4CA219D710069B&FORM=VRDGAR",
+  "flexión pasiva asistida": "https://www.bing.com/videos/riverview/relatedvideo?q=flexi%c3%b3n+pasiva+asistida+video+como+se+hace&&mid=7B528482C9DA8E7B70427B528482C9DA8E7B7042&FORM=VRDGAR",
+  "sentadilla parcial": "https://www.bing.com/videos/riverview/relatedvideo?q=+sentadilla+parcial+video+como+se+hace&&mid=39ACFDD1FB862F9705BF39ACFDD1FB862F9705BF&FORM=VRDGAR",
+  "subir escalon": "https://www.bing.com/videos/riverview/relatedvideo?q=subir+escalon++video+como+se+hace&&mid=F02D568143AD2BDAE432F02D568143AD2BDAE432&FORM=VRDGAR",
+  "extensión de rodilla sentada": "https://www.bing.com/videos/riverview/relatedvideo?q=extensi%c3%b3n+de+rodilla+sentada+++video+como+se+hace&&mid=6C1DA71FD31A1C9E2AA76C1DA71FD31A1C9E2AA7&FORM=VRDGAR",
+  "curl de isquiotibiales": "https://www.bing.com/videos/riverview/relatedvideo?q=curl+de+isquiotibiales++++video+como+se+hace&&mid=739525452AD8BC9BB708739525452AD8BC9BB708&FORM=VRDGAR",
+  "balance en una pierna": "https://www.bing.com/videos/riverview/relatedvideo?q=balance+en+una+pierna+++++video+como+se+hace&&mid=1A4CCAC926814F33341D1A4CCAC926814F33341D&FORM=VRDGAR",
+  "zancadas": "https://www.bing.com/videos/riverview/relatedvideo?q=zancadas++video+como+se+hace&&mid=7354AF618D9EBA09A9C97354AF618D9EBA09A9C9&mmscn=stvo&FORM=VRDGAR",
+  "puente glúteos": "https://www.bing.com/videos/riverview/relatedvideo?q=puente+gl%c3%bateos+++video+como+se+hace&&mid=DCD4C67820DA40A89D5CDCD4C67820DA40A89D5C&FORM=VRDGAR",
+  "flexión de rodilla boca abajo": "https://www.bing.com/videos/riverview/relatedvideo?q=flexi%c3%b3n+de+rodilla+boca+abajo++video+como+se+hace&&mid=BEF734AA25848FF37201BEF734AA25848FF37201&FORM=VRDGAR",
+  "marcha en lugar": "https://www.bing.com/videos/riverview/relatedvideo?q=+marcha+en+lugar+++video+como+se+hace&&mid=778CD64187C5DE4D5BF0778CD64187C5DE4D5BF0&FORM=VRDGAR",
+  "sentadilla completa": "https://www.bing.com/videos/riverview/relatedvideo?q=+sentadilla+completa+video+como+se+hace&&mid=6A3F4AA36D4966421A8C6A3F4AA36D4966421A8C&FORM=VRDGAR",
+  "elevación alternada de rodillas": "https://www.bing.com/videos/riverview/relatedvideo?q=+elevaci%c3%b3n+alternada+de+rodillas+video+como+se+hace&&mid=E5A27F395049705C3C7EE5A27F395049705C3C7E&FORM=VRDGAR",
+  "semisentadilla": "https://www.bing.com/videos/riverview/relatedvideo?q=semisentadilla+video+como+se+hace&&mid=5643EB2CE0633AEC9B025643EB2CE0633AEC9B02&mmscn=stvo&FORM=VRDGAR",
+  "flexión profunda controlada": "https://www.bing.com/videos/riverview/relatedvideo?q=flexi%c3%b3n+profunda+controlada+video+como+se+hace&&mid=9280CE9A9C2FC046DAFB9280CE9A9C2FC046DAFB&mmscn=stvo&FORM=VRDGAR",
+  "desplazamiento de talón": "https://www.bing.com/videos/riverview/relatedvideo?q=+desplazamiento+de+tal%c3%b3n++video+como+se+hace&&mid=72B0A54E19717D21438372B0A54E19717D214383&FORM=VRDGAR"
+};
+
 export default function PatientDashboard() {
   const [routines, setRoutines] = useState([]);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
@@ -156,7 +177,7 @@ export default function PatientDashboard() {
               <video
                 className="h-64 w-full bg-black object-cover"
                 controls
-                src={selectedRoutine.video_demo_url || 'https://cdn.pixabay.com/video/2019/10/24/28093-370074008_tiny.mp4'}
+                src={VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine.video_demo_url || 'https://cdn.pixabay.com/video/2019/10/24/28093-370074008_tiny.mp4'}
               />
             </div>
           </div>
