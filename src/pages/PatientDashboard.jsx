@@ -176,16 +176,7 @@ export default function PatientDashboard() {
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-800">
               {(() => {
                 const url = VIDEO_MAP[selectedRoutine?.nombre_ejercicio] || selectedRoutine?.video_demo_url;
-                // Si es un mp4/webm, usa <video>. Si no, muestra botón para abrir en otra pestaña
-                if (url && (url.endsWith('.mp4') || url.endsWith('.webm'))) {
-                  return (
-                    <video
-                      className="h-64 w-full bg-black object-cover"
-                      controls
-                      src={url}
-                    />
-                  );
-                } else if (url) {
+                if (url) {
                   return (
                     <a
                       href={url}
