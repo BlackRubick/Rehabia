@@ -90,13 +90,13 @@ export default function DoctorsPage() {
       <section className="medical-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Administración</p>
-            <h1 className="mt-1 text-2xl font-bold text-white">Gestión de doctores</h1>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Administración</p>
+            <h1 className="mt-1 text-2xl font-bold text-[var(--text-main)]">Gestión de doctores</h1>
+            <p className="mt-2 text-sm text-[var(--text-muted)]">
               Desde aquí el admin crea cuentas para que los doctores inicien sesión y registren pacientes.
             </p>
           </div>
-          <span className="rounded-full border border-medical-500/40 bg-medical-500/10 px-3 py-1 text-sm font-semibold text-medical-500">
+          <span className="rounded-full border border-[rgba(37,99,235,0.4)] bg-[rgba(37,99,235,0.1)] px-3 py-1 text-sm font-semibold text-[var(--medical)]">
             Solo admin
           </span>
         </div>
@@ -157,7 +157,7 @@ export default function DoctorsPage() {
                     )}
                   </td>
                   <td>
-                    <span className="rounded-full bg-medical-500/15 px-2 py-1 text-xs font-semibold text-medical-400">
+                    <span className="rounded-full bg-[rgba(37,99,235,0.15)] px-2 py-1 text-xs font-semibold text-[var(--medical)]">
                       {doctor.role}
                     </span>
                   </td>

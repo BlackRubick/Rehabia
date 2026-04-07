@@ -103,9 +103,9 @@ export default function PatientDashboard() {
       <section className="medical-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Panel clínico</p>
-            <h1 className="mt-1 text-2xl font-bold text-white">Dashboard del Paciente</h1>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Panel clínico</p>
+            <h1 className="mt-1 text-2xl font-bold text-[var(--text-main)]">Dashboard del Paciente</h1>
+            <p className="mt-2 text-sm text-[var(--text-muted)]">
               Aquí ves los ejercicios que te dejó el médico y tus sesiones registradas.
             </p>
           </div>
@@ -118,8 +118,8 @@ export default function PatientDashboard() {
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {summary.map((item) => (
           <div key={item.label} className="stat-card">
-            <p className="text-xs uppercase text-slate-400">{item.label}</p>
-            <p className="font-semibold text-slate-100">{item.value}</p>
+            <p className="text-xs uppercase text-[var(--text-muted)]">{item.label}</p>
+            <p className="font-semibold text-[var(--text-main)]">{item.value}</p>
           </div>
         ))}
       </section>
@@ -157,14 +157,14 @@ export default function PatientDashboard() {
                 onClick={() => setSelectedRoutine(routine)}
                 className={`rounded-xl border p-4 text-left transition ${
                   selectedRoutine?.id === routine.id
-                    ? 'border-medical-500 bg-medical-500/10 shadow-lg shadow-medical-500/10'
-                    : 'border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/80'
+                    ? 'border-[rgba(37,99,235,0.4)] bg-[rgba(37,99,235,0.1)] shadow-lg shadow-[rgba(37,99,235,0.1)]'
+                    : 'border-[var(--border-soft)] bg-[var(--surface-2)] hover:border-[var(--text-muted)] hover:bg-[var(--surface-3)]'
                 }`}
               >
-                <p className="font-semibold text-slate-100">{routine.nombre_ejercicio}</p>
-                <p className="text-sm text-slate-400">Rango: {routine.rango_min}° - {routine.rango_max}°</p>
-                <p className="text-sm text-slate-400">Repeticiones objetivo: {routine.repeticiones_objetivo}</p>
-                <p className="text-sm text-slate-400">Duración: {routine.duracion_minutos} min</p>
+                <p className="font-semibold text-[var(--text-main)]">{routine.nombre_ejercicio}</p>
+                <p className="text-sm text-[var(--text-muted)]">Rango: {routine.rango_min}° - {routine.rango_max}°</p>
+                <p className="text-sm text-[var(--text-muted)]">Repeticiones objetivo: {routine.repeticiones_objetivo}</p>
+                <p className="text-sm text-[var(--text-muted)]">Duración: {routine.duracion_minutos} min</p>
               </button>
             ))}
           </div>
@@ -179,10 +179,10 @@ export default function PatientDashboard() {
         <section className="space-y-4">
           <div className="medical-card">
             <h3 className="section-title">Video demostrativo</h3>
-            <p className="mb-3 mt-1 text-sm text-slate-400">
+            <p className="mb-3 mt-1 text-sm text-[var(--text-muted)]">
               Antes de iniciar, revisa el movimiento recomendado.
             </p>
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-800">
+            <div className="mt-4 overflow-hidden rounded-xl border border-[var(--border-soft)]">
               {(() => {
                 const url = normalizedMap[normalizeName(selectedRoutine?.nombre_ejercicio)] || selectedRoutine?.video_demo_url;
                 if (url) {
@@ -191,14 +191,14 @@ export default function PatientDashboard() {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-center text-blue-400 underline py-10"
+                      className="block py-10 text-center text-[var(--medical)] underline"
                     >
                       Ver video demostrativo
                     </a>
                   );
                 } else {
                   return (
-                    <div className="h-64 flex items-center justify-center text-slate-400">
+                    <div className="flex h-64 items-center justify-center text-[var(--text-muted)]">
                       No hay video disponible para este ejercicio.
                     </div>
                   );

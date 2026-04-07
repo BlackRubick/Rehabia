@@ -26,7 +26,7 @@ export default function TherapyCamera({ routine, onFinish }) {
 
   const feedbackClass = useMemo(() => {
     if (metrics.status === 'correct') return 'text-success';
-    if (metrics.status === 'idle') return 'text-slate-300';
+    if (metrics.status === 'idle') return 'text-[var(--text-muted)]';
     if (metrics.status === 'too-flexed') return 'text-warning';
     return 'text-danger';
   }, [metrics.status]);
@@ -173,8 +173,8 @@ export default function TherapyCamera({ routine, onFinish }) {
       )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Módulo IA</p>
-          <h3 className="text-lg font-semibold text-slate-100">Vista de cámara con IA</h3>
+          <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Módulo IA</p>
+          <h3 className="text-lg font-semibold text-[var(--text-main)]">Vista de cámara con IA</h3>
         </div>
         <div className="flex gap-2">
           {!running ? (
@@ -190,32 +190,32 @@ export default function TherapyCamera({ routine, onFinish }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 overflow-hidden rounded-xl border border-slate-800 bg-black shadow-lg shadow-black/40">
+        <div className="lg:col-span-2 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] shadow-lg shadow-black/20">
           <video ref={videoRef} className="hidden" playsInline />
           <canvas ref={canvasRef} className="h-full w-full" />
         </div>
 
-        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/80 p-4 text-sm">
-          <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-3">
-            <p className="text-slate-400">Ejercicio</p>
-            <p className="font-semibold text-slate-100">{routine?.nombre_ejercicio}</p>
+        <div className="space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] p-4 text-sm">
+          <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-panel)] p-3">
+            <p className="text-[var(--text-muted)]">Ejercicio</p>
+            <p className="font-semibold text-[var(--text-main)]">{routine?.nombre_ejercicio}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-              <p className="text-xs text-slate-400">Rango</p>
-              <p className="font-semibold text-slate-100">{minRange}° - {maxRange}°</p>
+            <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-panel)] p-3">
+              <p className="text-xs text-[var(--text-muted)]">Rango</p>
+              <p className="font-semibold text-[var(--text-main)]">{minRange}° - {maxRange}°</p>
             </div>
-            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-              <p className="text-xs text-slate-400">Ángulo actual</p>
-              <p className="font-semibold text-slate-100">{metrics.angle}°</p>
+            <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-panel)] p-3">
+              <p className="text-xs text-[var(--text-muted)]">Ángulo actual</p>
+              <p className="font-semibold text-[var(--text-main)]">{metrics.angle}°</p>
             </div>
-            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-              <p className="text-xs text-slate-400">Repeticiones</p>
-              <p className="font-semibold text-slate-100">{metrics.repsDone}/{maxReps}</p>
+            <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-panel)] p-3">
+              <p className="text-xs text-[var(--text-muted)]">Repeticiones</p>
+              <p className="font-semibold text-[var(--text-main)]">{metrics.repsDone}/{maxReps}</p>
             </div>
-            <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-              <p className="text-xs text-slate-400">Estado</p>
+            <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-panel)] p-3">
+              <p className="text-xs text-[var(--text-muted)]">Estado</p>
               <p className={`font-semibold ${feedbackClass}`}>{metrics.status}</p>
             </div>
           </div>

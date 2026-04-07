@@ -150,9 +150,9 @@ export default function AdminDashboard() {
       <section className="medical-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="mt-1 text-2xl font-bold text-white">{isDoctor ? 'Dashboard Doctor' : 'Dashboard Administrador'}</h1>
+            <h1 className="mt-1 text-2xl font-bold text-[var(--text-main)]">{isDoctor ? 'Dashboard Doctor' : 'Dashboard Administrador'}</h1>
           </div>
-          <span className="rounded-full border border-medical-500/40 bg-medical-500/10 px-3 py-1 text-sm font-semibold text-medical-500">
+          <span className="rounded-full border border-[rgba(37,99,235,0.4)] bg-[rgba(37,99,235,0.1)] px-3 py-1 text-sm font-semibold text-[var(--medical)]">
             Control clínico
           </span>
         </div>
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
       <section className="medical-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="section-title">Lista de pacientes</h2>
-          <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-sm text-slate-300">
+          <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-2)] px-3 py-1.5 text-sm text-[var(--text-muted)]">
             Total: {patients.length}
           </span>
         </div>
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
         </div>
 
         {patients.length === 0 && (
-          <p className="mt-3 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-400">
+          <p className="mt-3 rounded-lg border border-[var(--border-soft)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-muted)]">
             No hay pacientes registrados todavía.
           </p>
         )}
@@ -198,22 +198,22 @@ export default function AdminDashboard() {
         <section className="medical-card">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="section-title">Doctores registrados</h2>
-            <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-sm text-slate-300">
+            <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-2)] px-3 py-1.5 text-sm text-[var(--text-muted)]">
               Total: {doctors.length}
             </span>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {doctors.map((doctor) => (
-              <article key={doctor.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                <p className="font-semibold text-slate-100">{doctor.username}</p>
-                <p className="mt-1 text-sm text-slate-400">ID: {doctor.id}</p>
-                <span className="mt-2 inline-flex rounded-full bg-medical-500/15 px-2 py-1 text-xs font-semibold text-medical-400">
+              <article key={doctor.id} className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] p-4">
+                <p className="font-semibold text-[var(--text-main)]">{doctor.username}</p>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">ID: {doctor.id}</p>
+                <span className="mt-2 inline-flex rounded-full bg-[color:var(--medical)]/15 px-2 py-1 text-xs font-semibold text-[var(--medical)]">
                   {doctor.role}
                 </span>
               </article>
             ))}
             {doctors.length === 0 && (
-              <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-400">
+              <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] p-4 text-sm text-[var(--text-muted)]">
                 No hay doctores registrados todavía.
               </div>
             )}
@@ -243,8 +243,8 @@ export default function AdminDashboard() {
           <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {dashboardSummary.map((item) => (
               <div key={item.label} className="stat-card">
-                <p className="text-xs uppercase text-slate-400">{item.label}</p>
-                <p className="font-semibold text-slate-100">{item.value}</p>
+                <p className="text-xs uppercase text-[var(--text-muted)]">{item.label}</p>
+                <p className="font-semibold text-[var(--text-main)]">{item.value}</p>
               </div>
             ))}
           </section>
@@ -253,21 +253,21 @@ export default function AdminDashboard() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="section-title">Ejercicios actualmente asignados</h2>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="mt-1 text-sm text-[var(--text-muted)]">
                   Esto es exactamente lo que verá el paciente en su dashboard.
                 </p>
               </div>
-              <span className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-sm text-slate-300">
+              <span className="rounded-full border border-[var(--border-soft)] bg-[var(--surface-2)] px-3 py-1.5 text-sm text-[var(--text-muted)]">
                 Ángulo promedio: {avgAngle}°
               </span>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {assignedRoutines.map((item) => (
-                <article key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                  <p className="font-semibold text-slate-100">{item.nombre_ejercicio}</p>
-                  <p className="mt-1 text-sm text-slate-400">Rango: {item.rango_min}° - {item.rango_max}°</p>
-                  <p className="text-sm text-slate-400">Repeticiones: {item.repeticiones_objetivo}</p>
-                  <p className="text-sm text-slate-400">Duración: {item.duracion_minutos} min</p>
+                <article key={item.id} className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] p-4">
+                  <p className="font-semibold text-[var(--text-main)]">{item.nombre_ejercicio}</p>
+                  <p className="mt-1 text-sm text-[var(--text-muted)]">Rango: {item.rango_min}° - {item.rango_max}°</p>
+                  <p className="text-sm text-[var(--text-muted)]">Repeticiones: {item.repeticiones_objetivo}</p>
+                  <p className="text-sm text-[var(--text-muted)]">Duración: {item.duracion_minutos} min</p>
                 </article>
               ))}
             </div>

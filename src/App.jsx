@@ -6,10 +6,13 @@ import DoctorsPage from './pages/DoctorsPage';
 import LoginPage from './pages/LoginPage';
 import PatientDashboard from './pages/PatientDashboard';
 import RegisterPatientPage from './pages/RegisterPatientPage';
+import { useTheme } from './context/ThemeContext';
 
 export default function App() {
+  const { theme } = useTheme();
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] transition-colors duration-300" data-theme={theme}>
       <TopBar />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
