@@ -295,8 +295,8 @@ export default function AdminDashboard() {
 
           <section className="medical-card">
             <h2 className="section-title">Gráficos de progreso</h2>
-            <div className="mt-4 h-72 w-full">
-              <ResponsiveContainer>
+            <div className="mt-4 h-72 w-full min-w-0 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={progressData}>
                   <CartesianGrid stroke="#1e293b" />
                   <XAxis dataKey="fecha" stroke="#94a3b8" />

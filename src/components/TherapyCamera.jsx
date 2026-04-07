@@ -19,10 +19,46 @@ export default function TherapyCamera({ routine, onFinish }) {
   const [cameraError, setCameraError] = useState('');
   const phaseRef = useRef('up');
   const angleAccumulator = useRef([]);
+  const repsDoneRef = useRef(0);
+  const validRef = useRef(0);
+  const invalidRef = useRef(0);
 
   const maxReps = routine?.repeticiones_objetivo ?? 10;
   const minRange = routine?.rango_min ?? 80;
   const maxRange = routine?.rango_max ?? 130;
+
+  const resetSession = () => {
+    phaseRef.current = 'up';
+    angleAccumulator.current = [];
+    repsDoneRef.current = 0;
+    validRef.current = 0;
+    invalidRef.current = 0;
+    setCameraError('');
+    setMetrics({
+      repsDone: 0,
+      valid: 0,
+      invalid: 0,
+      avgAngle: 0,
+      status: 'idle',
+      angle: 0,
+    });
+  };
+
+  const startTherapy = () => {
+    resetSession();
+    setRunning(true);
+  };
+
+  const finishTherapy = () => {
+    setRunning(false);
+    onFinish({
+      repeticiones_validas: metrics.valid,
+      repeticiones_invalidas: metrics.invalid,
+      angulo_promedio: metrics.avgAngle,
+      cumplio_objetivo: metrics.valid >= maxReps,
+      repeticiones_totales: metrics.repsDone,
+    });
+  };
 
   const feedbackClass = useMemo(() => {
     if (metrics.status === 'correct') return 'text-success';
@@ -111,9 +147,9 @@ export default function TherapyCamera({ routine, onFinish }) {
 
           if (phaseRef.current === 'down' && angle >= maxRange - 5) {
             phaseRef.current = 'up';
-            repsDone += 1;
-            if (phaseRef.currentStatus === 'correct') valid += 1;
-            else invalid += 1;
+            repsDoneRef.current += 1;
+            if (phaseRef.currentStatus === 'correct') validRef.current += 1;
+            else invalidRef.current += 1;
           }
 
           const avgAngle =
@@ -121,9 +157,9 @@ export default function TherapyCamera({ routine, onFinish }) {
             angleAccumulator.current.length;
 
           setMetrics({
-            repsDone,
-            valid,
-            invalid,
+            repsDone: repsDoneRef.current,
+            valid: validRef.current,
+            invalid: invalidRef.current,
             avgAngle: Number(avgAngle.toFixed(2)),
             status,
             angle,
@@ -153,17 +189,6 @@ export default function TherapyCamera({ routine, onFinish }) {
     };
   }, [running, maxRange, minRange, routine?.rodilla_afectada]);
 
-  const finish = () => {
-    setRunning(false);
-    onFinish({
-      repeticiones_validas: metrics.valid,
-      repeticiones_invalidas: metrics.invalid,
-      angulo_promedio: metrics.avgAngle,
-      cumplio_objetivo: metrics.valid >= maxReps,
-      repeticiones_totales: metrics.repsDone,
-    });
-  };
-
   return (
     <div className="medical-card space-y-4">
       {cameraError && (
@@ -178,11 +203,11 @@ export default function TherapyCamera({ routine, onFinish }) {
         </div>
         <div className="flex gap-2">
           {!running ? (
-            <button className="btn-primary" onClick={() => setRunning(true)}>
+            <button className="btn-primary" onClick={startTherapy}>
               Iniciar terapia
             </button>
           ) : (
-            <button className="btn-outline" onClick={finish}>
+            <button className="btn-outline" onClick={finishTherapy}>
               Finalizar sesión
             </button>
           )}
