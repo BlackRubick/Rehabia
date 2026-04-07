@@ -1,8 +1,256 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { calculateAngle, getKneeStatus } from '../lib/poseMath';
 
-const LEFT = { hip: 23, knee: 25, ankle: 27 };
-const RIGHT = { hip: 24, knee: 26, ankle: 28 };
+const LEFT = { shoulder: 11, hip: 23, knee: 25, ankle: 27 };
+const RIGHT = { shoulder: 12, hip: 24, knee: 26, ankle: 28 };
+const MIN_VISIBILITY = 0.55;
+
+const EXERCISE_PROFILES = {
+  'deslizamiento de talon': {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'knee',
+    focusLabel: 'rodilla afectada',
+    guidance: 'Desliza el talón sin despegar la cadera del apoyo.',
+  },
+  'contraccion de cuadriceps': {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'knee',
+    focusLabel: 'cuádriceps y rodilla',
+    guidance: 'Aprieta el muslo y extiende la rodilla con control.',
+  },
+  'elevacion de pierna recta': {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'hip',
+    focusLabel: 'cadera y muslo',
+    guidance: 'Eleva la pierna recta manteniendo la rodilla extendida.',
+  },
+  'flexion pasiva asistida': {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'knee',
+    focusLabel: 'rodilla y muslo',
+    guidance: 'Controla la flexión sin movimientos bruscos.',
+  },
+  'sentadilla parcial': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'ambas piernas',
+    guidance: 'Baja en bloque y mantén rodillas alineadas.',
+  },
+  'step-ups (subir escalon)': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'piernas y escalón',
+    guidance: 'Sube con control y evita impulsarte con el tronco.',
+  },
+  'extension de rodilla sentado': {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'knee',
+    focusLabel: 'rodilla en extensión',
+    guidance: 'Extiende la rodilla sentado sin mover la cadera.',
+  },
+  'curl de isquiotibiales': {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'knee',
+    focusLabel: 'isquiotibiales y rodilla',
+    guidance: 'Flexiona la rodilla activando la parte posterior del muslo.',
+  },
+  'balance en una pierna': {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'hip',
+    focusLabel: 'cadera y estabilidad',
+    guidance: 'Mantén la pelvis estable y el apoyo firme.',
+  },
+  'sentadilla completa': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'ambas piernas',
+    guidance: 'Desciende de forma pareja y sin colapsar hacia adentro.',
+  },
+  'zancadas (lunges)': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'rodillas y caderas',
+    guidance: 'Mantén el torso estable y controla el apoyo delantero.',
+  },
+  'puente de gluteos': {
+    zone: 'pelvis',
+    tracking: 'both',
+    metric: 'hip',
+    focusLabel: 'pelvis y glúteos',
+    guidance: 'Eleva la pelvis sin arquear la zona lumbar.',
+  },
+  'flexion de rodilla boca abajo': {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'knee',
+    focusLabel: 'rodilla posterior',
+    guidance: 'Flexiona la rodilla boca abajo sin rotar la cadera.',
+  },
+  'marcha en el lugar': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'hip',
+    focusLabel: 'cadera y piernas',
+    guidance: 'Eleva las rodillas alternando sin inclinar el torso.',
+  },
+  'elevacion alternada de rodillas': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'hip',
+    focusLabel: 'cadera y rodillas',
+    guidance: 'Sube cada rodilla de forma alternada y controlada.',
+  },
+  'semi sentadilla': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'ambas piernas',
+    guidance: 'Baja poco y conserva el eje de rodillas y pies.',
+  },
+  'paso largo hacia adelante': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'zancada frontal',
+    guidance: 'Da un paso amplio controlando la rodilla delantera.',
+  },
+  'paso largo hacia atras': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'zancada posterior',
+    guidance: 'Retrocede con control y mantén la rodilla alineada.',
+  },
+  'paso lateral': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'movimiento lateral',
+    guidance: 'Desplázate al lado sin perder la alineación de las rodillas.',
+  },
+  'flexion profunda controlada': {
+    zone: 'bilateral-legs',
+    tracking: 'both',
+    metric: 'knee',
+    focusLabel: 'sentadilla profunda',
+    guidance: 'Baja profundo pero con control total del tronco y rodillas.',
+  },
+};
+
+function normalizeName(name) {
+  return (name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getExerciseProfile(routine) {
+  const name = normalizeName(routine?.nombre_ejercicio);
+  return EXERCISE_PROFILES[name] || {
+    zone: 'single-leg',
+    tracking: 'affected',
+    metric: 'knee',
+    focusLabel: 'rodilla afectada',
+    guidance: 'Mantén el foco en la articulación trabajada.',
+  };
+}
+
+function getTrackedSide(routine) {
+  return routine?.rodilla_afectada === 'derecha' ? RIGHT : LEFT;
+}
+
+function getVisibleLandmarks(profile, side) {
+  if (profile.zone === 'pelvis') {
+    return [11, 12, 23, 24, 25, 26, 27, 28];
+  }
+
+  if (profile.tracking === 'both') {
+    if (profile.metric === 'hip') {
+      return [11, 12, 23, 24, 25, 26, 27, 28];
+    }
+    return [23, 24, 25, 26, 27, 28];
+  }
+
+  return [side.shoulder, side.hip, side.knee, side.ankle];
+}
+
+function getVisibleConnections(profile, side) {
+  if (profile.zone === 'pelvis') {
+    return [
+      [11, 23],
+      [12, 24],
+      [23, 24],
+      [23, 25],
+      [24, 26],
+      [25, 27],
+      [26, 28],
+    ];
+  }
+
+  if (profile.tracking === 'both') {
+    return [
+      [23, 24],
+      [11, 23],
+      [12, 24],
+      [23, 25],
+      [25, 27],
+      [24, 26],
+      [26, 28],
+    ];
+  }
+
+  return [[side.shoulder, side.hip], [side.hip, side.knee], [side.knee, side.ankle]];
+}
+
+function getMetricPoints(profile, side, landmarks) {
+  if (profile.metric === 'hip') {
+    return {
+      a: landmarks[side.shoulder],
+      b: landmarks[side.hip],
+      c: landmarks[side.knee],
+    };
+  }
+
+  return {
+    a: landmarks[side.hip],
+    b: landmarks[side.knee],
+    c: landmarks[side.ankle],
+  };
+}
+
+function isReliable(point) {
+  if (!point) return false;
+  if (typeof point.visibility !== 'number') return true;
+  return point.visibility >= MIN_VISIBILITY;
+}
+
+function getSideColor(side, trackedSide, profile) {
+  if (profile.tracking === 'both') {
+    return side === LEFT ? '#60a5fa' : '#22c55e';
+  }
+  return side === trackedSide ? '#22c55e' : '#94a3b8';
+}
+
+function computeAngleForSide(profile, side, landmarks) {
+  const points = getMetricPoints(profile, side, landmarks);
+  if (!isReliable(points.a) || !isReliable(points.b) || !isReliable(points.c)) {
+    return null;
+  }
+  return calculateAngle(points.a, points.b, points.c);
+}
 
 export default function TherapyCamera({ routine, onFinish }) {
   const videoRef = useRef(null);
@@ -26,6 +274,13 @@ export default function TherapyCamera({ routine, onFinish }) {
   const maxReps = routine?.repeticiones_objetivo ?? 10;
   const minRange = routine?.rango_min ?? 80;
   const maxRange = routine?.rango_max ?? 130;
+  const exerciseProfile = useMemo(() => getExerciseProfile(routine), [routine]);
+  const trackedSide = useMemo(() => getTrackedSide(routine), [routine]);
+  const activeTargetLabel = useMemo(() => {
+    if (exerciseProfile.zone === 'pelvis') return 'pelvis y glúteos';
+    if (exerciseProfile.tracking === 'both') return 'ambas piernas';
+    return routine?.rodilla_afectada === 'derecha' ? 'pierna derecha' : 'pierna izquierda';
+  }, [exerciseProfile, routine?.rodilla_afectada]);
 
   const resetSession = () => {
     phaseRef.current = 'up';
@@ -72,10 +327,8 @@ export default function TherapyCamera({ routine, onFinish }) {
 
     const PoseClass = window.Pose;
     const CameraClass = window.Camera;
-    const drawConnectors = window.drawConnectors;
-    const drawLandmarks = window.drawLandmarks;
 
-    if (!PoseClass || !CameraClass || !drawConnectors || !drawLandmarks) {
+    if (!PoseClass || !CameraClass) {
       setCameraError('MediaPipe no cargado. Verifica conexión a internet.');
       setRunning(false);
       return undefined;
@@ -118,23 +371,51 @@ export default function TherapyCamera({ routine, onFinish }) {
       ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
       if (results.poseLandmarks) {
-        drawConnectors(ctx, results.poseLandmarks, PoseClass.POSE_CONNECTIONS, {
-          color: '#38bdf8',
-          lineWidth: 3,
-        });
-        drawLandmarks(ctx, results.poseLandmarks, {
-          color: '#22c55e',
-          lineWidth: 1,
-          radius: 3,
+        const visibleLandmarks = getVisibleLandmarks(exerciseProfile, trackedSide);
+        const visibleConnections = getVisibleConnections(exerciseProfile, trackedSide);
+
+        visibleConnections.forEach(([startIndex, endIndex]) => {
+          const start = results.poseLandmarks[startIndex];
+          const end = results.poseLandmarks[endIndex];
+          if (!isReliable(start) || !isReliable(end)) return;
+
+          const startSide = startIndex % 2 === 1 ? LEFT : RIGHT;
+          const connectionColor = getSideColor(startSide, trackedSide, exerciseProfile);
+
+          ctx.beginPath();
+          ctx.strokeStyle = connectionColor;
+          ctx.lineWidth = 3;
+          ctx.moveTo(start.x * canvas.width, start.y * canvas.height);
+          ctx.lineTo(end.x * canvas.width, end.y * canvas.height);
+          ctx.stroke();
         });
 
-        const side = routine?.rodilla_afectada === 'derecha' ? RIGHT : LEFT;
-        const hip = results.poseLandmarks[side.hip];
-        const knee = results.poseLandmarks[side.knee];
-        const ankle = results.poseLandmarks[side.ankle];
+        visibleLandmarks.forEach((landmarkIndex) => {
+          const landmark = results.poseLandmarks[landmarkIndex];
+          if (!isReliable(landmark)) return;
 
-        if (hip && knee && ankle) {
-          const angle = calculateAngle(hip, knee, ankle);
+          const side = landmarkIndex % 2 === 1 ? LEFT : RIGHT;
+          const pointColor = getSideColor(side, trackedSide, exerciseProfile);
+
+          ctx.beginPath();
+          ctx.fillStyle = pointColor;
+          ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        const angleCandidates =
+          exerciseProfile.tracking === 'both'
+            ? [
+                computeAngleForSide(exerciseProfile, LEFT, results.poseLandmarks),
+                computeAngleForSide(exerciseProfile, RIGHT, results.poseLandmarks),
+              ].filter((value) => typeof value === 'number')
+            : [computeAngleForSide(exerciseProfile, trackedSide, results.poseLandmarks)].filter(
+                (value) => typeof value === 'number',
+              );
+
+        if (angleCandidates.length) {
+          // For bilateral exercises use the largest active angle to avoid counting noise from the passive leg.
+          const angle = Math.max(...angleCandidates);
           const status = getKneeStatus(angle, minRange, maxRange);
           angleAccumulator.current.push(angle);
 
@@ -187,7 +468,7 @@ export default function TherapyCamera({ routine, onFinish }) {
       camera.stop();
       pose.close();
     };
-  }, [running, maxRange, minRange, routine?.rodilla_afectada]);
+  }, [running, maxRange, minRange, routine?.rodilla_afectada, exerciseProfile, trackedSide]);
 
   return (
     <div className="medical-card space-y-4">
@@ -200,6 +481,12 @@ export default function TherapyCamera({ routine, onFinish }) {
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Módulo IA</p>
           <h3 className="text-lg font-semibold text-[var(--text-main)]">Vista de cámara con IA</h3>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
+            Zona activa: {activeTargetLabel} · Objetivo: {exerciseProfile.focusLabel}
+          </p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">
+            {exerciseProfile.guidance}
+          </p>
         </div>
         <div className="flex gap-2">
           {!running ? (
@@ -224,6 +511,7 @@ export default function TherapyCamera({ routine, onFinish }) {
           <div className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-panel)] p-3">
             <p className="text-[var(--text-muted)]">Ejercicio</p>
             <p className="font-semibold text-[var(--text-main)]">{routine?.nombre_ejercicio}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">Foco: {exerciseProfile.focusLabel}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
