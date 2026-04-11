@@ -8,6 +8,8 @@ const REP_TOLERANCE = 5;
 const SMOOTHING_WINDOW = 4;
 const PHASE_CONFIRM_FRAMES = 2;
 const MIN_REP_INTERVAL_MS = 250;
+const REP_OVERSHOOT_TOLERANCE = 18;
+const HIP_OVERSHOOT_TOLERANCE = 25;
 
 const EXERCISE_PROFILES = {
   'deslizamiento de talon': {
@@ -271,6 +273,12 @@ function getEffectiveAngle(profile, angleCandidates) {
   return Math.max(...angleCandidates);
 }
 
+function isRepValidByPeak(profile, peakAngle, maxRange) {
+  const minTarget = Math.max(0, maxRange - REP_TOLERANCE);
+  const overshootTolerance = profile.metric === 'hip' ? HIP_OVERSHOOT_TOLERANCE : REP_OVERSHOOT_TOLERANCE;
+  return peakAngle >= minTarget && peakAngle <= maxRange + overshootTolerance;
+}
+
 function playSuccessSound(audioContextRef, profile, routineId) {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) return;
@@ -323,6 +331,7 @@ export default function TherapyCamera({ routine, onFinish }) {
   const validRef = useRef(0);
   const invalidRef = useRef(0);
   const repReachedTargetRef = useRef(false);
+  const repPeakAngleRef = useRef(0);
   const audioContextRef = useRef(null);
   const angleWindowRef = useRef([]);
   const downConfirmRef = useRef(0);
@@ -347,6 +356,7 @@ export default function TherapyCamera({ routine, onFinish }) {
     validRef.current = 0;
     invalidRef.current = 0;
     repReachedTargetRef.current = false;
+    repPeakAngleRef.current = 0;
     angleWindowRef.current = [];
     downConfirmRef.current = 0;
     upConfirmRef.current = 0;
@@ -504,12 +514,15 @@ export default function TherapyCamera({ routine, onFinish }) {
             if (downConfirmRef.current >= PHASE_CONFIRM_FRAMES) {
               phaseRef.current = 'down';
               repReachedTargetRef.current = status === 'correct';
+              repPeakAngleRef.current = normalizedAngle;
               downConfirmRef.current = 0;
               upConfirmRef.current = 0;
             }
           }
 
           if (phaseRef.current === 'down') {
+            repPeakAngleRef.current = Math.max(repPeakAngleRef.current, normalizedAngle);
+
             if (status === 'correct') {
               repReachedTargetRef.current = true;
             }
@@ -527,7 +540,14 @@ export default function TherapyCamera({ routine, onFinish }) {
 
               if (now - lastRepAtRef.current >= MIN_REP_INTERVAL_MS) {
                 repsDoneRef.current += 1;
-                if (repReachedTargetRef.current) {
+
+                const validByPeak = isRepValidByPeak(
+                  exerciseProfile,
+                  repPeakAngleRef.current,
+                  maxRange,
+                );
+
+                if (repReachedTargetRef.current || validByPeak) {
                   validRef.current += 1;
                   playSuccessSound(audioContextRef, exerciseProfile, routine?.id);
                 } else {
@@ -537,6 +557,7 @@ export default function TherapyCamera({ routine, onFinish }) {
               }
 
               repReachedTargetRef.current = false;
+              repPeakAngleRef.current = 0;
             }
           }
 
