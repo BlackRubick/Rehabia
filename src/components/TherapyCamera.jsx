@@ -4,6 +4,7 @@ import { calculateAngle, getKneeStatus } from '../lib/poseMath';
 const LEFT = { shoulder: 11, hip: 23, knee: 25, ankle: 27 };
 const RIGHT = { shoulder: 12, hip: 24, knee: 26, ankle: 28 };
 const MIN_VISIBILITY = 0.55;
+const REP_TOLERANCE = 5;
 
 const EXERCISE_PROFILES = {
   'deslizamiento de talon': {
@@ -252,6 +253,43 @@ function computeAngleForSide(profile, side, landmarks) {
   return calculateAngle(points.a, points.b, points.c);
 }
 
+function toMovementAngle(rawAngle) {
+  return Number(Math.max(0, 180 - rawAngle).toFixed(2));
+}
+
+function playSuccessSound(audioContextRef, profile, routineId) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  if (!audioContextRef.current) {
+    audioContextRef.current = new AudioContextClass();
+  }
+
+  const ctx = audioContextRef.current;
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  const familyBase = profile.metric === 'hip' ? 740 : 620;
+  const exerciseOffset = ((Number(routineId) || 0) % 6) * 22;
+  const frequency = familyBase + exerciseOffset;
+
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(frequency, now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.24);
+}
+
 export default function TherapyCamera({ routine, onFinish }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -270,6 +308,8 @@ export default function TherapyCamera({ routine, onFinish }) {
   const repsDoneRef = useRef(0);
   const validRef = useRef(0);
   const invalidRef = useRef(0);
+  const repReachedTargetRef = useRef(false);
+  const audioContextRef = useRef(null);
 
   const maxReps = routine?.repeticiones_objetivo ?? 10;
   const minRange = routine?.rango_min ?? 80;
@@ -288,6 +328,7 @@ export default function TherapyCamera({ routine, onFinish }) {
     repsDoneRef.current = 0;
     validRef.current = 0;
     invalidRef.current = 0;
+    repReachedTargetRef.current = false;
     setCameraError('');
     setMetrics({
       repsDone: 0,
@@ -414,23 +455,33 @@ export default function TherapyCamera({ routine, onFinish }) {
               );
 
         if (angleCandidates.length) {
-          // For bilateral exercises use the largest active angle to avoid counting noise from the passive leg.
-          const angle = Math.max(...angleCandidates);
-          const status = getKneeStatus(angle, minRange, maxRange);
-          angleAccumulator.current.push(angle);
+          // For bilateral exercises use the largest active angle and convert to flexion-like motion.
+          const rawAngle = Math.max(...angleCandidates);
+          const movementAngle = toMovementAngle(rawAngle);
+          const status = getKneeStatus(movementAngle, minRange, maxRange);
+          angleAccumulator.current.push(movementAngle);
 
-          // Guardar el último status para saber si la repetición fue correcta
-          phaseRef.currentStatus = status;
-
-          if (phaseRef.current === 'up' && angle <= minRange + 5) {
+          if (phaseRef.current === 'up' && movementAngle >= maxRange - REP_TOLERANCE) {
             phaseRef.current = 'down';
+            repReachedTargetRef.current = status === 'correct';
           }
 
-          if (phaseRef.current === 'down' && angle >= maxRange - 5) {
+          if (phaseRef.current === 'down') {
+            if (status === 'correct') {
+              repReachedTargetRef.current = true;
+            }
+          }
+
+          if (phaseRef.current === 'down' && movementAngle <= minRange + REP_TOLERANCE) {
             phaseRef.current = 'up';
             repsDoneRef.current += 1;
-            if (phaseRef.currentStatus === 'correct') validRef.current += 1;
-            else invalidRef.current += 1;
+            if (repReachedTargetRef.current) {
+              validRef.current += 1;
+              playSuccessSound(audioContextRef, exerciseProfile, routine?.id);
+            } else {
+              invalidRef.current += 1;
+            }
+            repReachedTargetRef.current = false;
           }
 
           const avgAngle =
@@ -443,7 +494,7 @@ export default function TherapyCamera({ routine, onFinish }) {
             invalid: invalidRef.current,
             avgAngle: Number(avgAngle.toFixed(2)),
             status,
-            angle,
+            angle: movementAngle,
           });
         }
       }
