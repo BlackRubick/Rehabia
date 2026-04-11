@@ -5,6 +5,9 @@ const LEFT = { shoulder: 11, hip: 23, knee: 25, ankle: 27 };
 const RIGHT = { shoulder: 12, hip: 24, knee: 26, ankle: 28 };
 const MIN_VISIBILITY = 0.55;
 const REP_TOLERANCE = 5;
+const SMOOTHING_WINDOW = 4;
+const PHASE_CONFIRM_FRAMES = 2;
+const MIN_REP_INTERVAL_MS = 250;
 
 const EXERCISE_PROFILES = {
   'deslizamiento de talon': {
@@ -257,6 +260,17 @@ function toMovementAngle(rawAngle) {
   return Number(Math.max(0, 180 - rawAngle).toFixed(2));
 }
 
+function getEffectiveAngle(profile, angleCandidates) {
+  if (!angleCandidates.length) return null;
+
+  if (profile.tracking === 'both' && profile.metric === 'knee') {
+    const avg = angleCandidates.reduce((sum, item) => sum + item, 0) / angleCandidates.length;
+    return Number(avg.toFixed(2));
+  }
+
+  return Math.max(...angleCandidates);
+}
+
 function playSuccessSound(audioContextRef, profile, routineId) {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) return;
@@ -310,6 +324,10 @@ export default function TherapyCamera({ routine, onFinish }) {
   const invalidRef = useRef(0);
   const repReachedTargetRef = useRef(false);
   const audioContextRef = useRef(null);
+  const angleWindowRef = useRef([]);
+  const downConfirmRef = useRef(0);
+  const upConfirmRef = useRef(0);
+  const lastRepAtRef = useRef(0);
 
   const maxReps = routine?.repeticiones_objetivo ?? 10;
   const minRange = routine?.rango_min ?? 80;
@@ -329,6 +347,10 @@ export default function TherapyCamera({ routine, onFinish }) {
     validRef.current = 0;
     invalidRef.current = 0;
     repReachedTargetRef.current = false;
+    angleWindowRef.current = [];
+    downConfirmRef.current = 0;
+    upConfirmRef.current = 0;
+    lastRepAtRef.current = 0;
     setCameraError('');
     setMetrics({
       repsDone: 0,
@@ -455,33 +477,67 @@ export default function TherapyCamera({ routine, onFinish }) {
               );
 
         if (angleCandidates.length) {
-          // For bilateral exercises use the largest active angle and convert to flexion-like motion.
-          const rawAngle = Math.max(...angleCandidates);
-          const movementAngle = toMovementAngle(rawAngle);
-          const status = getKneeStatus(movementAngle, minRange, maxRange);
-          angleAccumulator.current.push(movementAngle);
+          const effectiveRawAngle = getEffectiveAngle(exerciseProfile, angleCandidates);
+          if (effectiveRawAngle === null) return;
 
-          if (phaseRef.current === 'up' && movementAngle >= maxRange - REP_TOLERANCE) {
-            phaseRef.current = 'down';
-            repReachedTargetRef.current = status === 'correct';
+          const movementAngle = toMovementAngle(effectiveRawAngle);
+          angleWindowRef.current.push(movementAngle);
+          if (angleWindowRef.current.length > SMOOTHING_WINDOW) {
+            angleWindowRef.current.shift();
+          }
+
+          const smoothedAngle =
+            angleWindowRef.current.reduce((sum, item) => sum + item, 0) / angleWindowRef.current.length;
+          const normalizedAngle = Number(smoothedAngle.toFixed(2));
+
+          const now = performance.now();
+          const status = getKneeStatus(normalizedAngle, minRange, maxRange);
+          angleAccumulator.current.push(normalizedAngle);
+
+          if (phaseRef.current === 'up') {
+            if (normalizedAngle >= maxRange - REP_TOLERANCE) {
+              downConfirmRef.current += 1;
+            } else {
+              downConfirmRef.current = 0;
+            }
+
+            if (downConfirmRef.current >= PHASE_CONFIRM_FRAMES) {
+              phaseRef.current = 'down';
+              repReachedTargetRef.current = status === 'correct';
+              downConfirmRef.current = 0;
+              upConfirmRef.current = 0;
+            }
           }
 
           if (phaseRef.current === 'down') {
             if (status === 'correct') {
               repReachedTargetRef.current = true;
             }
-          }
 
-          if (phaseRef.current === 'down' && movementAngle <= minRange + REP_TOLERANCE) {
-            phaseRef.current = 'up';
-            repsDoneRef.current += 1;
-            if (repReachedTargetRef.current) {
-              validRef.current += 1;
-              playSuccessSound(audioContextRef, exerciseProfile, routine?.id);
+            if (normalizedAngle <= minRange + REP_TOLERANCE) {
+              upConfirmRef.current += 1;
             } else {
-              invalidRef.current += 1;
+              upConfirmRef.current = 0;
             }
-            repReachedTargetRef.current = false;
+
+            if (upConfirmRef.current >= PHASE_CONFIRM_FRAMES) {
+              phaseRef.current = 'up';
+              downConfirmRef.current = 0;
+              upConfirmRef.current = 0;
+
+              if (now - lastRepAtRef.current >= MIN_REP_INTERVAL_MS) {
+                repsDoneRef.current += 1;
+                if (repReachedTargetRef.current) {
+                  validRef.current += 1;
+                  playSuccessSound(audioContextRef, exerciseProfile, routine?.id);
+                } else {
+                  invalidRef.current += 1;
+                }
+                lastRepAtRef.current = now;
+              }
+
+              repReachedTargetRef.current = false;
+            }
           }
 
           const avgAngle =
@@ -494,7 +550,7 @@ export default function TherapyCamera({ routine, onFinish }) {
             invalid: invalidRef.current,
             avgAngle: Number(avgAngle.toFixed(2)),
             status,
-            angle: movementAngle,
+            angle: normalizedAngle,
           });
         }
       }
