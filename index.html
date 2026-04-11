@@ -8,8 +8,22 @@
       name="description"
       content="Plataforma de rehabilitación de rodilla asistida por IA para pacientes y fisioterapeutas."
     />
+    <script>
+      (function () {
+        try {
+          const savedTheme = localStorage.getItem('rehabia_theme');
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const theme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : (prefersDark ? 'dark' : 'light');
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+        } catch (error) {
+          document.documentElement.dataset.theme = 'light';
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();
+    </script>
   </head>
-  <body class="bg-slate-950">
+  <body>
     <div id="root"></div>
     <!-- MediaPipe CDN: expone window.Pose, window.Camera, window.drawConnectors, window.drawLandmarks -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
