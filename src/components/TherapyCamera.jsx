@@ -466,7 +466,7 @@ export default function TherapyCamera({ routine, onFinish }) {
   const repTrackedFramesRef = useRef(0);
   const goalReachedRef = useRef(false);
 
-  const maxReps = routine?.repeticiones_objetivo ?? 10;
+  const maxReps = Number(routine?.repeticiones_objetivo ?? 10) || 10;
   const minRange = routine?.rango_min ?? 80;
   const maxRange = routine?.rango_max ?? 130;
   const exerciseProfile = useMemo(() => getExerciseProfile(routine), [routine]);
@@ -533,7 +533,7 @@ export default function TherapyCamera({ routine, onFinish }) {
 
     await Swal.fire({
       title: 'Objetivo completado',
-      text: `Excelente trabajo. Alcanzaste ${valid} repeticiones correctas.`,
+      text: `Excelente trabajo. Completaste ${repsDone}/${maxReps} repeticiones (correctas: ${valid}).`,
       icon: 'success',
       confirmButtonText: 'Finalizar',
       allowOutsideClick: false,
@@ -792,7 +792,10 @@ export default function TherapyCamera({ routine, onFinish }) {
                   angleAccumulator.current.reduce((sum, item) => sum + item, 0) /
                   angleAccumulator.current.length;
 
-                if (validRef.current >= maxReps && !goalReachedRef.current) {
+                const reachedGoalByTotal = repsDoneRef.current >= maxReps;
+                const reachedGoalByValid = validRef.current >= maxReps;
+
+                if ((reachedGoalByTotal || reachedGoalByValid) && !goalReachedRef.current) {
                   shouldNotifyGoal = true;
                   summaryForGoal = {
                     valid: validRef.current,
