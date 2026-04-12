@@ -700,13 +700,33 @@ export default function TherapyCamera({ routine, onFinish }) {
       <div className="grid gap-4 lg:grid-cols-3">
         <div
           ref={panelRef}
-          className="lg:col-span-2 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] shadow-lg shadow-black/20"
+          className="relative lg:col-span-2 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] shadow-lg shadow-black/20"
         >
           <video ref={videoRef} className="hidden" playsInline />
           <canvas
             ref={canvasRef}
             className={`w-full ${isFullscreen ? 'h-screen object-contain bg-black' : 'h-full'}`}
           />
+
+          <div className="pointer-events-none absolute left-3 top-3 right-3 z-10">
+            <div className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-white/20 bg-black/55 px-3 py-2 text-xs text-white backdrop-blur-sm">
+              <span className="rounded-md bg-white/15 px-2 py-1">
+                Reps: {metrics.repsDone}/{maxReps}
+              </span>
+              <span className="rounded-md bg-emerald-500/25 px-2 py-1 text-emerald-100">
+                Buenas: {metrics.valid}
+              </span>
+              <span className="rounded-md bg-rose-500/25 px-2 py-1 text-rose-100">
+                Malas: {metrics.invalid}
+              </span>
+              <span className="rounded-md bg-sky-500/25 px-2 py-1 text-sky-100">
+                Angulo: {metrics.angle}°
+              </span>
+              <span className="rounded-md bg-amber-400/20 px-2 py-1 text-amber-100">
+                Estado: {metrics.status}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] p-4 text-sm">
