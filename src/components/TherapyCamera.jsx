@@ -11,6 +11,40 @@ const MIN_REP_INTERVAL_MS = 250;
 const REP_OVERSHOOT_TOLERANCE = 18;
 const HIP_OVERSHOOT_TOLERANCE = 25;
 
+function isLikelySquatExercise(routine) {
+  const name = normalizeName(routine?.nombre_ejercicio);
+  return name.includes('sentadilla') || name.includes('flexion profunda');
+}
+
+function getRepCalibration(profile, routine) {
+  const isSquat = isLikelySquatExercise(routine);
+
+  if (isSquat && profile.metric === 'knee') {
+    return {
+      phaseTolerance: 10,
+      targetTolerance: 14,
+      overshootTolerance: 34,
+      minRepIntervalMs: 180,
+    };
+  }
+
+  if (profile.tracking === 'both' && profile.metric === 'knee') {
+    return {
+      phaseTolerance: 7,
+      targetTolerance: 9,
+      overshootTolerance: 24,
+      minRepIntervalMs: 220,
+    };
+  }
+
+  return {
+    phaseTolerance: REP_TOLERANCE,
+    targetTolerance: REP_TOLERANCE,
+    overshootTolerance: profile.metric === 'hip' ? HIP_OVERSHOOT_TOLERANCE : REP_OVERSHOOT_TOLERANCE,
+    minRepIntervalMs: MIN_REP_INTERVAL_MS,
+  };
+}
+
 const EXERCISE_PROFILES = {
   'deslizamiento de talon': {
     zone: 'single-leg',
@@ -273,9 +307,9 @@ function getEffectiveAngle(profile, angleCandidates) {
   return Math.max(...angleCandidates);
 }
 
-function isRepValidByPeak(profile, peakAngle, maxRange) {
-  const minTarget = Math.max(0, maxRange - REP_TOLERANCE);
-  const overshootTolerance = profile.metric === 'hip' ? HIP_OVERSHOOT_TOLERANCE : REP_OVERSHOOT_TOLERANCE;
+function isRepValidByPeak(profile, peakAngle, maxRange, calibration) {
+  const minTarget = Math.max(0, maxRange - calibration.targetTolerance);
+  const overshootTolerance = calibration.overshootTolerance;
   return peakAngle >= minTarget && peakAngle <= maxRange + overshootTolerance;
 }
 
@@ -315,7 +349,9 @@ function playSuccessSound(audioContextRef, profile, routineId) {
 export default function TherapyCamera({ routine, onFinish }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const panelRef = useRef(null);
   const [running, setRunning] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [metrics, setMetrics] = useState({
     repsDone: 0,
     valid: 0,
@@ -343,6 +379,7 @@ export default function TherapyCamera({ routine, onFinish }) {
   const maxRange = routine?.rango_max ?? 130;
   const exerciseProfile = useMemo(() => getExerciseProfile(routine), [routine]);
   const trackedSide = useMemo(() => getTrackedSide(routine), [routine]);
+  const repCalibration = useMemo(() => getRepCalibration(exerciseProfile, routine), [exerciseProfile, routine]);
   const activeTargetLabel = useMemo(() => {
     if (exerciseProfile.zone === 'pelvis') return 'pelvis y glúteos';
     if (exerciseProfile.tracking === 'both') return 'ambas piernas';
@@ -394,6 +431,33 @@ export default function TherapyCamera({ routine, onFinish }) {
     if (metrics.status === 'too-flexed') return 'text-warning';
     return 'text-danger';
   }, [metrics.status]);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      const panel = panelRef.current;
+      if (panel?.requestFullscreen) {
+        await panel.requestFullscreen();
+      }
+    } catch (err) {
+      setCameraError(`No se pudo activar pantalla completa: ${err.message || err}`);
+    }
+  };
 
   useEffect(() => {
     if (!running || !videoRef.current) return undefined;
@@ -505,7 +569,7 @@ export default function TherapyCamera({ routine, onFinish }) {
           angleAccumulator.current.push(normalizedAngle);
 
           if (phaseRef.current === 'up') {
-            if (normalizedAngle >= maxRange - REP_TOLERANCE) {
+            if (normalizedAngle >= maxRange - repCalibration.phaseTolerance) {
               downConfirmRef.current += 1;
             } else {
               downConfirmRef.current = 0;
@@ -527,7 +591,7 @@ export default function TherapyCamera({ routine, onFinish }) {
               repReachedTargetRef.current = true;
             }
 
-            if (normalizedAngle <= minRange + REP_TOLERANCE) {
+            if (normalizedAngle <= minRange + repCalibration.phaseTolerance) {
               upConfirmRef.current += 1;
             } else {
               upConfirmRef.current = 0;
@@ -538,13 +602,14 @@ export default function TherapyCamera({ routine, onFinish }) {
               downConfirmRef.current = 0;
               upConfirmRef.current = 0;
 
-              if (now - lastRepAtRef.current >= MIN_REP_INTERVAL_MS) {
+              if (now - lastRepAtRef.current >= repCalibration.minRepIntervalMs) {
                 repsDoneRef.current += 1;
 
                 const validByPeak = isRepValidByPeak(
                   exerciseProfile,
                   repPeakAngleRef.current,
                   maxRange,
+                  repCalibration,
                 );
 
                 if (repReachedTargetRef.current || validByPeak) {
@@ -617,6 +682,9 @@ export default function TherapyCamera({ routine, onFinish }) {
           </p>
         </div>
         <div className="flex gap-2">
+          <button className="btn-outline" onClick={toggleFullscreen}>
+            {isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+          </button>
           {!running ? (
             <button className="btn-primary" onClick={startTherapy}>
               Iniciar terapia
@@ -630,9 +698,15 @@ export default function TherapyCamera({ routine, onFinish }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] shadow-lg shadow-black/20">
+        <div
+          ref={panelRef}
+          className="lg:col-span-2 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] shadow-lg shadow-black/20"
+        >
           <video ref={videoRef} className="hidden" playsInline />
-          <canvas ref={canvasRef} className="h-full w-full" />
+          <canvas
+            ref={canvasRef}
+            className={`w-full ${isFullscreen ? 'h-screen object-contain bg-black' : 'h-full'}`}
+          />
         </div>
 
         <div className="space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] p-4 text-sm">
