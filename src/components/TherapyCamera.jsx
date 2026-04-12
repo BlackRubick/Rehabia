@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Swal from 'sweetalert2';
 import { calculateAngle, getKneeStatus } from '../lib/poseMath';
 
 const LEFT = { shoulder: 11, hip: 23, knee: 25, ankle: 27 };
@@ -402,6 +403,37 @@ function playSuccessSound(audioContextRef, profile, routineId) {
   harmonic.stop(now + 0.34);
 }
 
+function playGoalReachedSound(audioContextRef) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+
+  if (!audioContextRef.current) {
+    audioContextRef.current = new AudioContextClass();
+  }
+
+  const ctx = audioContextRef.current;
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+
+  const now = ctx.currentTime;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.34, now + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.62);
+  gain.connect(ctx.destination);
+
+  const notes = [660, 880, 1046];
+  notes.forEach((frequency, index) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(frequency, now + index * 0.12);
+    osc.connect(gain);
+    osc.start(now + index * 0.12);
+    osc.stop(now + index * 0.12 + 0.18);
+  });
+}
+
 export default function TherapyCamera({ routine, onFinish }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -432,6 +464,7 @@ export default function TherapyCamera({ routine, onFinish }) {
   const repBestKneeDiffRef = useRef(null);
   const repBalancedFramesRef = useRef(0);
   const repTrackedFramesRef = useRef(0);
+  const goalReachedRef = useRef(false);
 
   const maxReps = routine?.repeticiones_objetivo ?? 10;
   const minRange = routine?.rango_min ?? 80;
@@ -465,6 +498,7 @@ export default function TherapyCamera({ routine, onFinish }) {
     repBestKneeDiffRef.current = null;
     repBalancedFramesRef.current = 0;
     repTrackedFramesRef.current = 0;
+    goalReachedRef.current = false;
     setCameraError('');
     setMetrics({
       repsDone: 0,
@@ -489,6 +523,31 @@ export default function TherapyCamera({ routine, onFinish }) {
       angulo_promedio: metrics.avgAngle,
       cumplio_objetivo: metrics.valid >= maxReps,
       repeticiones_totales: metrics.repsDone,
+    });
+  };
+
+  const handleGoalReached = async ({ valid, invalid, avgAngle, repsDone }) => {
+    if (goalReachedRef.current) return;
+    goalReachedRef.current = true;
+    setRunning(false);
+
+    await Swal.fire({
+      title: 'Objetivo completado',
+      text: `Excelente trabajo. Alcanzaste ${valid} repeticiones correctas.`,
+      icon: 'success',
+      confirmButtonText: 'Finalizar',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+
+    playGoalReachedSound(audioContextRef);
+
+    onFinish({
+      repeticiones_validas: valid,
+      repeticiones_invalidas: invalid,
+      angulo_promedio: avgAngle,
+      cumplio_objetivo: true,
+      repeticiones_totales: repsDone,
     });
   };
 
@@ -693,6 +752,8 @@ export default function TherapyCamera({ routine, onFinish }) {
               phaseRef.current = 'up';
               downConfirmRef.current = 0;
               upConfirmRef.current = 0;
+              let shouldNotifyGoal = false;
+              let summaryForGoal = null;
 
               if (now - lastRepAtRef.current >= repCalibration.minRepIntervalMs) {
                 repsDoneRef.current += 1;
@@ -726,6 +787,21 @@ export default function TherapyCamera({ routine, onFinish }) {
                 } else {
                   invalidRef.current += 1;
                 }
+
+                const avgAngleForGoal =
+                  angleAccumulator.current.reduce((sum, item) => sum + item, 0) /
+                  angleAccumulator.current.length;
+
+                if (validRef.current >= maxReps && !goalReachedRef.current) {
+                  shouldNotifyGoal = true;
+                  summaryForGoal = {
+                    valid: validRef.current,
+                    invalid: invalidRef.current,
+                    avgAngle: Number(avgAngleForGoal.toFixed(2)),
+                    repsDone: repsDoneRef.current,
+                  };
+                }
+
                 lastRepAtRef.current = now;
               }
 
@@ -734,6 +810,10 @@ export default function TherapyCamera({ routine, onFinish }) {
               repBestKneeDiffRef.current = null;
               repBalancedFramesRef.current = 0;
               repTrackedFramesRef.current = 0;
+
+              if (shouldNotifyGoal && summaryForGoal) {
+                handleGoalReached(summaryForGoal);
+              }
             }
           }
 
