@@ -22,9 +22,11 @@ function getRepCalibration(profile, routine) {
   if (isSquat && profile.metric === 'knee') {
     return {
       phaseTolerance: 10,
-      targetTolerance: 14,
+      targetTolerance: 22,
       overshootTolerance: 34,
       minRepIntervalMs: 180,
+      maxKneeDiff: 30,
+      minBalancedRatio: 0.3,
     };
   }
 
@@ -34,6 +36,8 @@ function getRepCalibration(profile, routine) {
       targetTolerance: 9,
       overshootTolerance: 24,
       minRepIntervalMs: 220,
+      maxKneeDiff: 34,
+      minBalancedRatio: 0.2,
     };
   }
 
@@ -42,6 +46,8 @@ function getRepCalibration(profile, routine) {
     targetTolerance: REP_TOLERANCE,
     overshootTolerance: profile.metric === 'hip' ? HIP_OVERSHOOT_TOLERANCE : REP_OVERSHOOT_TOLERANCE,
     minRepIntervalMs: MIN_REP_INTERVAL_MS,
+    maxKneeDiff: 40,
+    minBalancedRatio: 0,
   };
 }
 
@@ -313,6 +319,23 @@ function isRepValidByPeak(profile, peakAngle, maxRange, calibration) {
   return peakAngle >= minTarget && peakAngle <= maxRange + overshootTolerance;
 }
 
+function isSquatRepValidByForm({
+  peakAngle,
+  minRange,
+  maxRange,
+  bestKneeDiff,
+  balancedRatio,
+  calibration,
+}) {
+  const minimumDepth = Math.max(minRange + 12, maxRange - (calibration.targetTolerance + 6));
+  const reachedDepth = peakAngle >= minimumDepth;
+  const hasSymmetry =
+    typeof bestKneeDiff === 'number' &&
+    (bestKneeDiff <= calibration.maxKneeDiff || balancedRatio >= calibration.minBalancedRatio);
+
+  return reachedDepth && hasSymmetry;
+}
+
 function playSuccessSound(audioContextRef, profile, routineId) {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) return;
@@ -373,6 +396,9 @@ export default function TherapyCamera({ routine, onFinish }) {
   const downConfirmRef = useRef(0);
   const upConfirmRef = useRef(0);
   const lastRepAtRef = useRef(0);
+  const repBestKneeDiffRef = useRef(null);
+  const repBalancedFramesRef = useRef(0);
+  const repTrackedFramesRef = useRef(0);
 
   const maxReps = routine?.repeticiones_objetivo ?? 10;
   const minRange = routine?.rango_min ?? 80;
@@ -380,6 +406,7 @@ export default function TherapyCamera({ routine, onFinish }) {
   const exerciseProfile = useMemo(() => getExerciseProfile(routine), [routine]);
   const trackedSide = useMemo(() => getTrackedSide(routine), [routine]);
   const repCalibration = useMemo(() => getRepCalibration(exerciseProfile, routine), [exerciseProfile, routine]);
+  const isSquatExercise = useMemo(() => isLikelySquatExercise(routine), [routine]);
   const activeTargetLabel = useMemo(() => {
     if (exerciseProfile.zone === 'pelvis') return 'pelvis y glúteos';
     if (exerciseProfile.tracking === 'both') return 'ambas piernas';
@@ -398,6 +425,9 @@ export default function TherapyCamera({ routine, onFinish }) {
     downConfirmRef.current = 0;
     upConfirmRef.current = 0;
     lastRepAtRef.current = 0;
+    repBestKneeDiffRef.current = null;
+    repBalancedFramesRef.current = 0;
+    repTrackedFramesRef.current = 0;
     setCameraError('');
     setMetrics({
       repsDone: 0,
@@ -540,15 +570,14 @@ export default function TherapyCamera({ routine, onFinish }) {
           ctx.fill();
         });
 
+        const leftRawAngle = computeAngleForSide(exerciseProfile, LEFT, results.poseLandmarks);
+        const rightRawAngle = computeAngleForSide(exerciseProfile, RIGHT, results.poseLandmarks);
+        const trackedRawAngle = computeAngleForSide(exerciseProfile, trackedSide, results.poseLandmarks);
+
         const angleCandidates =
           exerciseProfile.tracking === 'both'
-            ? [
-                computeAngleForSide(exerciseProfile, LEFT, results.poseLandmarks),
-                computeAngleForSide(exerciseProfile, RIGHT, results.poseLandmarks),
-              ].filter((value) => typeof value === 'number')
-            : [computeAngleForSide(exerciseProfile, trackedSide, results.poseLandmarks)].filter(
-                (value) => typeof value === 'number',
-              );
+            ? [leftRawAngle, rightRawAngle].filter((value) => typeof value === 'number')
+            : [trackedRawAngle].filter((value) => typeof value === 'number');
 
         if (angleCandidates.length) {
           const effectiveRawAngle = getEffectiveAngle(exerciseProfile, angleCandidates);
@@ -568,6 +597,15 @@ export default function TherapyCamera({ routine, onFinish }) {
           const status = getKneeStatus(normalizedAngle, minRange, maxRange);
           angleAccumulator.current.push(normalizedAngle);
 
+          const leftMovementAngle =
+            typeof leftRawAngle === 'number' ? toMovementAngle(leftRawAngle) : null;
+          const rightMovementAngle =
+            typeof rightRawAngle === 'number' ? toMovementAngle(rightRawAngle) : null;
+          const kneeDiff =
+            typeof leftMovementAngle === 'number' && typeof rightMovementAngle === 'number'
+              ? Math.abs(leftMovementAngle - rightMovementAngle)
+              : null;
+
           if (phaseRef.current === 'up') {
             if (normalizedAngle >= maxRange - repCalibration.phaseTolerance) {
               downConfirmRef.current += 1;
@@ -579,6 +617,10 @@ export default function TherapyCamera({ routine, onFinish }) {
               phaseRef.current = 'down';
               repReachedTargetRef.current = status === 'correct';
               repPeakAngleRef.current = normalizedAngle;
+              repBestKneeDiffRef.current = kneeDiff;
+              repBalancedFramesRef.current =
+                typeof kneeDiff === 'number' && kneeDiff <= repCalibration.maxKneeDiff ? 1 : 0;
+              repTrackedFramesRef.current = typeof kneeDiff === 'number' ? 1 : 0;
               downConfirmRef.current = 0;
               upConfirmRef.current = 0;
             }
@@ -586,6 +628,19 @@ export default function TherapyCamera({ routine, onFinish }) {
 
           if (phaseRef.current === 'down') {
             repPeakAngleRef.current = Math.max(repPeakAngleRef.current, normalizedAngle);
+
+            if (typeof kneeDiff === 'number') {
+              repTrackedFramesRef.current += 1;
+              if (kneeDiff <= repCalibration.maxKneeDiff) {
+                repBalancedFramesRef.current += 1;
+              }
+
+              if (repBestKneeDiffRef.current === null) {
+                repBestKneeDiffRef.current = kneeDiff;
+              } else {
+                repBestKneeDiffRef.current = Math.min(repBestKneeDiffRef.current, kneeDiff);
+              }
+            }
 
             if (status === 'correct') {
               repReachedTargetRef.current = true;
@@ -612,7 +667,23 @@ export default function TherapyCamera({ routine, onFinish }) {
                   repCalibration,
                 );
 
-                if (repReachedTargetRef.current || validByPeak) {
+                const balancedRatio =
+                  repTrackedFramesRef.current > 0
+                    ? repBalancedFramesRef.current / repTrackedFramesRef.current
+                    : 0;
+
+                const validBySquatForm =
+                  isSquatExercise &&
+                  isSquatRepValidByForm({
+                    peakAngle: repPeakAngleRef.current,
+                    minRange,
+                    maxRange,
+                    bestKneeDiff: repBestKneeDiffRef.current,
+                    balancedRatio,
+                    calibration: repCalibration,
+                  });
+
+                if (repReachedTargetRef.current || validByPeak || validBySquatForm) {
                   validRef.current += 1;
                   playSuccessSound(audioContextRef, exerciseProfile, routine?.id);
                 } else {
@@ -623,6 +694,9 @@ export default function TherapyCamera({ routine, onFinish }) {
 
               repReachedTargetRef.current = false;
               repPeakAngleRef.current = 0;
+              repBestKneeDiffRef.current = null;
+              repBalancedFramesRef.current = 0;
+              repTrackedFramesRef.current = 0;
             }
           }
 
@@ -661,7 +735,7 @@ export default function TherapyCamera({ routine, onFinish }) {
       camera.stop();
       pose.close();
     };
-  }, [running, maxRange, minRange, routine?.rodilla_afectada, exerciseProfile, trackedSide]);
+  }, [running, maxRange, minRange, routine?.rodilla_afectada, exerciseProfile, trackedSide, repCalibration, isSquatExercise]);
 
   return (
     <div className="medical-card space-y-4">
