@@ -351,6 +351,7 @@ function playSuccessSound(audioContextRef, profile, routineId) {
 
   const now = ctx.currentTime;
   const osc = ctx.createOscillator();
+  const harmonic = ctx.createOscillator();
   const gain = ctx.createGain();
 
   const familyBase = profile.metric === 'hip' ? 740 : 620;
@@ -359,14 +360,19 @@ function playSuccessSound(audioContextRef, profile, routineId) {
 
   osc.type = 'sine';
   osc.frequency.setValueAtTime(frequency, now);
+  harmonic.type = 'triangle';
+  harmonic.frequency.setValueAtTime(frequency * 2, now);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+  gain.gain.exponentialRampToValueAtTime(0.28, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
 
   osc.connect(gain);
+  harmonic.connect(gain);
   gain.connect(ctx.destination);
   osc.start(now);
-  osc.stop(now + 0.24);
+  harmonic.start(now);
+  osc.stop(now + 0.34);
+  harmonic.stop(now + 0.34);
 }
 
 export default function TherapyCamera({ routine, onFinish }) {
