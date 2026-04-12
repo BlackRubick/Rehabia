@@ -551,6 +551,21 @@ export default function TherapyCamera({ routine, onFinish }) {
     });
   };
 
+  useEffect(() => {
+    if (!running || goalReachedRef.current) return;
+
+    const reachedGoalByTotal = metrics.repsDone >= maxReps;
+    const reachedGoalByValid = metrics.valid >= maxReps;
+    if (!reachedGoalByTotal && !reachedGoalByValid) return;
+
+    handleGoalReached({
+      valid: metrics.valid,
+      invalid: metrics.invalid,
+      avgAngle: metrics.avgAngle,
+      repsDone: metrics.repsDone,
+    });
+  }, [running, metrics.repsDone, metrics.valid, metrics.invalid, metrics.avgAngle, maxReps]);
+
   const feedbackClass = useMemo(() => {
     if (metrics.status === 'correct') return 'text-success';
     if (metrics.status === 'idle') return 'text-[var(--text-muted)]';
