@@ -799,7 +799,9 @@ export default function TherapyCamera({ routine, onFinish }) {
                 if (repReachedTargetRef.current || validByPeak || validBySquatForm) {
                   validRef.current += 1;
                   playSuccessSound(audioContextRef, exerciseProfile, routine?.id);
-                } else {
+                }
+                // Siempre cuenta la repetición como mala si no fue válida
+                if (!(repReachedTargetRef.current || validByPeak || validBySquatForm)) {
                   invalidRef.current += 1;
                 }
 
