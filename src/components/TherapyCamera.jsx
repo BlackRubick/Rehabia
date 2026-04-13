@@ -23,14 +23,14 @@ function getRepCalibration(profile, routine) {
   if (isSquat && profile.metric === 'knee') {
     return {
       phaseTolerance: 10,
-      targetTolerance: 22,
+      targetTolerance: 10,
       overshootTolerance: 34,
       minRepIntervalMs: 180,
       maxKneeDiff: 30,
       minBalancedRatio: 0.3,
       phaseConfirmFrames: 1,
-      descendFromMinOffset: 18,
-      peakFromMinOffset: 14,
+      descendFromMinOffset: 24,
+      peakFromMinOffset: 30,
     };
   }
 
@@ -66,8 +66,8 @@ function getRepTargets(profile, routine, minRange, maxRange, calibration) {
     const descendTarget = Math.max(minRange + calibration.descendFromMinOffset, minRange + 8);
     const peakTarget = Math.max(minRange + calibration.peakFromMinOffset, minRange + 6);
     return {
-      descendTarget: Math.min(descendTarget, maxRange + calibration.overshootTolerance),
-      peakTarget: Math.min(peakTarget, maxRange + calibration.overshootTolerance),
+      descendTarget: Math.max(28, Math.min(descendTarget, maxRange + calibration.overshootTolerance)),
+      peakTarget: Math.max(32, Math.min(peakTarget, maxRange + calibration.overshootTolerance)),
       ascendTarget: minRange + calibration.phaseTolerance,
     };
   }
@@ -726,7 +726,7 @@ export default function TherapyCamera({ routine, onFinish }) {
 
             if (downConfirmRef.current >= repCalibration.phaseConfirmFrames) {
               phaseRef.current = 'down';
-              repReachedTargetRef.current = status === 'correct';
+              repReachedTargetRef.current = normalizedAngle >= repTargets.peakTarget;
               repPeakAngleRef.current = normalizedAngle;
               repBestKneeDiffRef.current = kneeDiff;
               repBalancedFramesRef.current =
@@ -753,7 +753,7 @@ export default function TherapyCamera({ routine, onFinish }) {
               }
             }
 
-            if (status === 'correct') {
+            if (normalizedAngle >= repTargets.peakTarget) {
               repReachedTargetRef.current = true;
             }
 
@@ -796,12 +796,16 @@ export default function TherapyCamera({ routine, onFinish }) {
                     calibration: repCalibration,
                   });
 
-                if (repReachedTargetRef.current || validByPeak || validBySquatForm) {
+                const isValidRep = isSquatExercise
+                  ? repReachedTargetRef.current && (validByPeak || validBySquatForm)
+                  : repReachedTargetRef.current || validByPeak || validBySquatForm;
+
+                if (isValidRep) {
                   validRef.current += 1;
                   playSuccessSound(audioContextRef, exerciseProfile, routine?.id);
                 }
                 // Siempre cuenta la repetición como mala si no fue válida
-                if (!(repReachedTargetRef.current || validByPeak || validBySquatForm)) {
+                if (!isValidRep) {
                   invalidRef.current += 1;
                 }
 

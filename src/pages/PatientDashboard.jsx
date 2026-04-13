@@ -39,6 +39,19 @@ export default function PatientDashboard() {
   const [message, setMessage] = useState('');
   const [history, setHistory] = useState([]);
 
+  const completedRoutineIds = useMemo(() => {
+    return new Set(
+      history
+        .filter((item) => item.cumplio_objetivo && typeof item.rutina_id === 'number')
+        .map((item) => item.rutina_id),
+    );
+  }, [history]);
+
+  const availableRoutines = useMemo(
+    () => routines.filter((item) => !completedRoutineIds.has(item.id)),
+    [routines, completedRoutineIds],
+  );
+
   useEffect(() => {
     const loadData = async () => {
       const [{ data: routinesData }, { data: sessionsData }] = await Promise.all([
@@ -48,11 +61,19 @@ export default function PatientDashboard() {
 
       setRoutines(routinesData);
       setSelectedRoutine((current) => {
-        if (!routinesData.length) return null;
-        if (current && routinesData.some((item) => item.id === current.id)) {
-          return routinesData.find((item) => item.id === current.id) || routinesData[0];
+        const completedIds = new Set(
+          sessionsData
+            .filter((item) => item.cumplio_objetivo && typeof item.rutina_id === 'number')
+            .map((item) => item.rutina_id),
+        );
+
+        const selectable = routinesData.filter((item) => !completedIds.has(item.id));
+        if (!selectable.length) return null;
+
+        if (current && selectable.some((item) => item.id === current.id)) {
+          return selectable.find((item) => item.id === current.id) || selectable[0];
         }
-        return routinesData[0];
+        return selectable[0];
       });
       setHistory(sessionsData);
     };
@@ -91,6 +112,19 @@ export default function PatientDashboard() {
 
       setRoutines(routinesData);
       setHistory(sessionsData);
+      const completedIds = new Set(
+        sessionsData
+          .filter((item) => item.cumplio_objetivo && typeof item.rutina_id === 'number')
+          .map((item) => item.rutina_id),
+      );
+      const selectable = routinesData.filter((item) => !completedIds.has(item.id));
+      setSelectedRoutine((current) => {
+        if (!selectable.length) return null;
+        if (current && selectable.some((item) => item.id === current.id)) {
+          return current;
+        }
+        return selectable[0];
+      });
       setMessage('Sesión guardada correctamente.');
       setTimeout(() => setMessage(''), 3000);
     } catch (e) {
@@ -154,8 +188,13 @@ export default function PatientDashboard() {
             {routines.map((routine) => (
               <button
                 key={routine.id}
+                disabled={completedRoutineIds.has(routine.id)}
                 onClick={() => setSelectedRoutine(routine)}
                 className={`rounded-xl border p-4 text-left transition ${
+                  completedRoutineIds.has(routine.id)
+                    ? 'cursor-not-allowed border-success/40 bg-success/10 opacity-70'
+                    : ''
+                } ${
                   selectedRoutine?.id === routine.id
                     ? 'border-[rgba(37,99,235,0.4)] bg-[rgba(37,99,235,0.1)] shadow-lg shadow-[rgba(37,99,235,0.1)]'
                     : 'border-[var(--border-soft)] bg-[var(--surface-2)] hover:border-[var(--text-muted)] hover:bg-[var(--surface-3)]'
@@ -165,6 +204,9 @@ export default function PatientDashboard() {
                 <p className="text-sm text-[var(--text-muted)]">Rango: {routine.rango_min}° - {routine.rango_max}°</p>
                 <p className="text-sm text-[var(--text-muted)]">Repeticiones objetivo: {routine.repeticiones_objetivo}</p>
                 <p className="text-sm text-[var(--text-muted)]">Duración: {routine.duracion_minutos} min</p>
+                {completedRoutineIds.has(routine.id) && (
+                  <p className="mt-2 text-xs font-semibold text-success">Ejercicio completado</p>
+                )}
               </button>
             ))}
           </div>
@@ -207,6 +249,12 @@ export default function PatientDashboard() {
             </div>
           </div>
           <TherapyCamera routine={selectedRoutine} onFinish={saveSession} />
+        </section>
+      )}
+
+      {!availableRoutines.length && routines.length > 0 && (
+        <section className="rounded-xl border border-success/40 bg-success/10 px-4 py-3 text-sm text-success">
+          Ya completaste todos tus ejercicios asignados. Espera nuevas rutinas del médico.
         </section>
       )}
 

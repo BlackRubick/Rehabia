@@ -13,6 +13,7 @@ class SessionCreate(BaseModel):
 
 class SessionOut(BaseModel):
     id: int
+    rutina_id: int | None = None
     fecha: datetime
     repeticiones_validas: int
     repeticiones_invalidas: int
