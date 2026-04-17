@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import api from '../lib/api';
 import {
   CartesianGrid,
@@ -28,6 +31,56 @@ export default function AdminDashboard() {
   const [selectedExerciseId, setSelectedExerciseId] = useState(String(baseTemplate.id));
   const [routine, setRoutine] = useState(baseTemplate);
   const [message, setMessage] = useState('');
+  const chartRef = useRef();
+  // Genera el PDF de historial clínico
+  const handleDownloadPDF = async () => {
+    if (!patient) return;
+    const doc = new jsPDF();
+
+    // Título
+    doc.setFontSize(18);
+    doc.text('Historial Clínico', 14, 18);
+
+    // Datos del paciente
+    doc.setFontSize(12);
+    doc.text(`Nombre: ${patient.nombre || ''}`, 14, 30);
+    doc.text(`ID: ${patient.unique_id || ''}`, 14, 38);
+    doc.text(`Lesión: ${patient.lesion || ''}`, 14, 46);
+    doc.text(`Edad: ${patient.edad || ''}`, 14, 54);
+
+    // Tabla de historial de sesiones
+    if (stats.length > 0) {
+      autoTable(doc, {
+        startY: 62,
+        head: [['Fecha', 'Correctas', 'Malas', 'Ángulo']],
+        body: stats.map((item) => [
+          new Date(item.fecha).toLocaleDateString(),
+          item.repeticiones_validas,
+          item.repeticiones_invalidas,
+          item.angulo_promedio,
+        ]),
+      });
+    }
+
+    // Gráfica de progreso como imagen
+    if (chartRef.current) {
+      const chartElem = chartRef.current;
+      try {
+        const canvas = await html2canvas(chartElem, { backgroundColor: '#fff', scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const imgProps = doc.getImageProperties(imgData);
+        const imgWidth = pageWidth - 28;
+        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+        const y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 70;
+        doc.addImage(imgData, 'PNG', 14, y, imgWidth, imgHeight);
+      } catch (err) {
+        // fallback: no image
+      }
+    }
+
+    doc.save(`historial_${patient.unique_id || 'paciente'}.pdf`);
+  };
 
   const syncPatient = async (nextPatientId) => {
     const key = nextPatientId.trim().toUpperCase();
@@ -240,6 +293,11 @@ export default function AdminDashboard() {
 
       {patient && (
         <>
+          <div className="flex justify-end mb-2">
+            <button className="btn-primary" onClick={handleDownloadPDF}>
+              Descargar PDF
+            </button>
+          </div>
           <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {dashboardSummary.map((item) => (
               <div key={item.label} className="stat-card">
@@ -295,16 +353,63 @@ export default function AdminDashboard() {
 
           <section className="medical-card">
             <h2 className="section-title">Gráficos de progreso</h2>
-            <div className="mt-4 h-72 w-full min-w-0 min-h-0">
+            <div className="mt-4 h-80 w-full min-w-0 min-h-0" ref={chartRef} id="progress-chart">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={progressData}>
-                  <CartesianGrid stroke="#1e293b" />
-                  <XAxis dataKey="fecha" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="correctas" stroke="#16a34a" strokeWidth={2} />
-                  <Line type="monotone" dataKey="incorrectas" stroke="#dc2626" strokeWidth={2} />
-                  <Line type="monotone" dataKey="angulo" stroke="#2563eb" strokeWidth={2} />
+                <LineChart data={progressData} margin={{ top: 24, right: 32, left: 8, bottom: 32 }}>
+                  <CartesianGrid strokeDasharray="4 4" stroke="#334155" />
+                  <XAxis
+                    dataKey="fecha"
+                    stroke="#64748b"
+                    tick={{ fontSize: 13 }}
+                    angle={-20}
+                    height={60}
+                    label={{ value: 'Fecha', position: 'insideBottom', offset: -18, fill: '#64748b', fontSize: 14 }}
+                  />
+                  <YAxis
+                    stroke="#64748b"
+                    tick={{ fontSize: 13 }}
+                    label={{ value: 'Valor', angle: -90, position: 'insideLeft', fill: '#64748b', fontSize: 14 }}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#fff' }}
+                    labelStyle={{ color: '#38bdf8', fontWeight: 600 }}
+                    formatter={(value, name) => {
+                      if (name === 'correctas') return [`${value} correctas`, '✔️ Correctas'];
+                      if (name === 'incorrectas') return [`${value} malas`, '❌ Malas'];
+                      if (name === 'angulo') return [`${value}°`, 'Ángulo'];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    iconType="circle"
+                    wrapperStyle={{ paddingBottom: 12 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="correctas"
+                    stroke="#22c55e"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#22c55e', stroke: '#fff', strokeWidth: 1 }}
+                    activeDot={{ r: 6, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="incorrectas"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#ef4444', stroke: '#fff', strokeWidth: 1 }}
+                    activeDot={{ r: 6, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="angulo"
+                    stroke="#3b82f6"
+                    strokeDasharray="6 3"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#3b82f6', stroke: '#fff', strokeWidth: 1 }}
+                    activeDot={{ r: 5, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
