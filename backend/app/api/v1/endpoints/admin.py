@@ -1,3 +1,22 @@
+from fastapi import Path
+
+# Eliminar rutina asignada a un paciente
+@router.delete('/patients/{patient_unique_id}/routines/{routine_id}', status_code=204)
+def delete_patient_routine(
+    patient_unique_id: str,
+    routine_id: int = Path(..., description="ID de la rutina a eliminar"),
+    _: object = Depends(require_staff),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.unique_id == patient_unique_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail='Paciente no encontrado')
+    routine = db.query(Routine).filter(Routine.id == routine_id, Routine.paciente_id == patient.id).first()
+    if not routine:
+        raise HTTPException(status_code=404, detail='Rutina no encontrada para este paciente')
+    db.delete(routine)
+    db.commit()
+    return None
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 

@@ -1,4 +1,17 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
+  // Eliminar rutina asignada
+  const handleDeleteRoutine = async (routineId) => {
+    if (!patient || !routineId) return;
+    if (!window.confirm('¿Seguro que deseas eliminar este ejercicio asignado?')) return;
+    try {
+      await api.delete(`/admin/patients/${patient.unique_id}/routines/${routineId}`);
+      await syncPatient(patient.unique_id);
+      setMessage('Ejercicio eliminado.');
+      setTimeout(() => setMessage(''), 2500);
+    } catch (e) {
+      setMessage('No se pudo eliminar el ejercicio.');
+    }
+  };
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
@@ -322,8 +335,17 @@ export default function AdminDashboard() {
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {assignedRoutines.map((item) => (
-                <article key={item.id} className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] p-4">
-                  <p className="font-semibold text-[var(--text-main)]">{item.nombre_ejercicio}</p>
+                <article key={item.id} className="rounded-xl border border-[var(--border-soft)] bg-[var(--surface-2)] p-4 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-[var(--text-main)]">{item.nombre_ejercicio}</p>
+                    <button
+                      className="btn-danger text-xs px-2 py-1 ml-2"
+                      title="Eliminar ejercicio"
+                      onClick={() => handleDeleteRoutine(item.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                   <p className="mt-1 text-sm text-[var(--text-muted)]">Rango: {item.rango_min}° - {item.rango_max}°</p>
                   <p className="text-sm text-[var(--text-muted)]">Repeticiones: {item.repeticiones_objetivo}</p>
                   <p className="text-sm text-[var(--text-muted)]">Duración: {item.duracion_minutos} min</p>
