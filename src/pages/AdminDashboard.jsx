@@ -1,17 +1,4 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-  // Eliminar rutina asignada
-  const handleDeleteRoutine = async (routineId) => {
-    if (!patient || !routineId) return;
-    if (!window.confirm('¿Seguro que deseas eliminar este ejercicio asignado?')) return;
-    try {
-      await api.delete(`/admin/patients/${patient.unique_id}/routines/${routineId}`);
-      await syncPatient(patient.unique_id);
-      setMessage('Ejercicio eliminado.');
-      setTimeout(() => setMessage(''), 2500);
-    } catch (e) {
-      setMessage('No se pudo eliminar el ejercicio.');
-    }
-  };
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
@@ -34,6 +21,20 @@ import { useAuth } from '../context/AuthContext';
 const baseTemplate = EXERCISE_CATALOG[0];
 
 export default function AdminDashboard() {
+  // ...existing code...
+  // Eliminar rutina asignada
+  const handleDeleteRoutine = async (routineId) => {
+    if (!patient || !routineId) return;
+    if (!window.confirm('¿Seguro que deseas eliminar este ejercicio asignado?')) return;
+    try {
+      await api.delete(`/admin/patients/${patient.unique_id}/routines/${routineId}`);
+      await syncPatient(patient.unique_id);
+      setMessage('Ejercicio eliminado.');
+      setTimeout(() => setMessage(''), 2500);
+    } catch (e) {
+      setMessage('No se pudo eliminar el ejercicio.');
+    }
+  };
   const { user } = useAuth();
   const isDoctor = user?.role === 'doctor';
   const [doctors, setDoctors] = useState([]);
