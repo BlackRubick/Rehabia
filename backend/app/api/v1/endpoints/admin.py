@@ -1,7 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Path
-router = APIRouter()
-# ...otros endpoints...
 
+from fastapi import APIRouter, Depends, HTTPException, Path
+from sqlalchemy.orm import Session
+from app.api.deps import require_admin, require_staff
+from app.core.security import get_password_hash
+from app.db.session import get_db
+from app.models.patient import Patient
+from app.models.routine import Routine
+from app.models.session import Session as SessionModel
+from app.models.user import User
+from app.schemas.doctor import DoctorCreate, DoctorOut, DoctorUpdate
+from app.schemas.patient import PatientOut
+from app.schemas.routine import RoutineCreate, RoutineOut
+
+router = APIRouter()
 # Eliminar rutina asignada a un paciente
 @router.delete('/patients/{patient_unique_id}/routines/{routine_id}', status_code=204)
 def delete_patient_routine(
@@ -19,21 +30,6 @@ def delete_patient_routine(
     db.delete(routine)
     db.commit()
     return None
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-
-from app.api.deps import require_admin, require_staff
-from app.core.security import get_password_hash
-from app.db.session import get_db
-from app.models.patient import Patient
-from app.models.routine import Routine
-from app.models.session import Session as SessionModel
-from app.models.user import User
-from app.schemas.doctor import DoctorCreate, DoctorOut, DoctorUpdate
-from app.schemas.patient import PatientOut
-from app.schemas.routine import RoutineCreate, RoutineOut
-
-router = APIRouter()
 
 
 @router.get('/patients', response_model=list[PatientOut])
