@@ -49,98 +49,168 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState('');
   const chartRef = useRef();
   // Genera el PDF de historial clínico
-  const handleDownloadPDF = async () => {
-    if (!patient) return;
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 18;
+const handleDownloadPDF = async () => {
+  if (!patient) return;
 
-    // Encabezado con logo y título
-    // Logo eliminado del PDF
-    doc.setFontSize(22);
-    doc.setTextColor('#2563eb');
-    doc.text('Historial Clínico', 14, y);
-    y += 10;
-    doc.setDrawColor('#2563eb');
-    doc.setLineWidth(1);
-    doc.line(14, y, pageWidth - 14, y);
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  let y = 20;
+
+  // 🎨 Colores elegantes
+  const primary = [30, 64, 175]; // azul elegante
+  const gray = [100, 116, 139];
+  const light = [241, 245, 249];
+
+  // =========================
+  // 🧾 HEADER
+  // =========================
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(...primary);
+  doc.text('REPORTE CLÍNICO', 14, y);
+
+  doc.setFontSize(10);
+  doc.setTextColor(...gray);
+  doc.text(`Fecha: ${new Date().toLocaleDateString()}`, pageWidth - 14, y, {
+    align: 'right',
+  });
+
+  y += 8;
+
+  doc.setDrawColor(...primary);
+  doc.setLineWidth(0.8);
+  doc.line(14, y, pageWidth - 14, y);
+
+  y += 10;
+
+  // =========================
+  // 👤 DATOS DEL PACIENTE
+  // =========================
+  doc.setFontSize(14);
+  doc.setTextColor(...primary);
+  doc.text('Datos del paciente', 14, y);
+
+  y += 6;
+
+  doc.setFillColor(...light);
+  doc.roundedRect(14, y, pageWidth - 28, 32, 6, 6, 'F');
+
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+
+  const leftX = 18;
+  const rightX = pageWidth / 2 + 10;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Nombre:', leftX, y + 8);
+  doc.text('ID:', leftX, y + 18);
+
+  doc.text('Edad:', rightX, y + 8);
+  doc.text('Lesión:', rightX, y + 18);
+
+  doc.setFont('helvetica', 'normal');
+  doc.text(patient.nombre || '-', leftX + 25, y + 8);
+  doc.text(patient.unique_id || '-', leftX + 25, y + 18);
+
+  doc.text(String(patient.edad || '-'), rightX + 25, y + 8);
+  doc.text(patient.lesion || '-', rightX + 25, y + 18);
+
+  y += 42;
+
+  // =========================
+  // 📊 TABLA
+  // =========================
+  doc.setFontSize(14);
+  doc.setTextColor(...primary);
+  doc.text('Historial de sesiones', 14, y);
+
+  y += 6;
+
+  if (stats.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Fecha', 'Correctas', 'Incorrectas', 'Ángulo promedio']],
+      body: stats.map((item) => [
+        new Date(item.fecha).toLocaleDateString(),
+        item.repeticiones_validas,
+        item.repeticiones_invalidas,
+        item.angulo_promedio + '°',
+      ]),
+      theme: 'grid',
+      styles: {
+        fontSize: 10,
+        cellPadding: 4,
+        textColor: [15, 23, 42],
+      },
+      headStyles: {
+        fillColor: primary,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+  // =========================
+  // 📈 GRÁFICA
+  // =========================
+  if (chartRef.current) {
+    doc.setFontSize(14);
+    doc.setTextColor(...primary);
+    doc.text('Progreso del paciente', 14, y);
+
     y += 6;
 
-    // Tarjeta de datos del paciente
-    doc.setFillColor('#f1f5f9');
-    doc.roundedRect(14, y, pageWidth - 28, 28, 4, 4, 'F');
-    doc.setFontSize(12);
-    doc.setTextColor('#0f172a');
-    doc.text(`Nombre:`, 18, y + 8);
-    doc.text(`${patient.nombre || ''}`, 45, y + 8);
-    doc.text(`ID:`, 18, y + 16);
-    doc.text(`${patient.unique_id || ''}`, 45, y + 16);
-    doc.text(`Edad:`, pageWidth / 2, y + 8);
-    doc.text(`${patient.edad || ''}`, pageWidth / 2 + 20, y + 8);
-    doc.text(`Lesión:`, pageWidth / 2, y + 16);
-    doc.text(`${patient.lesion || ''}`, pageWidth / 2 + 20, y + 16);
-    y += 34;
-
-    // Tabla de historial de sesiones
-    let tableY = y;
-    if (stats.length > 0) {
-      autoTable(doc, {
-        startY: tableY,
-        head: [['Fecha', '✔️ Correctas', '❌ Malas', 'Ángulo']],
-        body: stats.map((item) => [
-          new Date(item.fecha).toLocaleDateString(),
-          item.repeticiones_validas,
-          item.repeticiones_invalidas,
-          item.angulo_promedio,
-        ]),
-        theme: 'striped',
-        styles: {
-          fillColor: [241, 245, 249],
-          textColor: '#0f172a',
-          fontSize: 11,
-        },
-        headStyles: {
-          fillColor: [37, 99, 235],
-          textColor: '#fff',
-          fontStyle: 'bold',
-        },
-        alternateRowStyles: {
-          fillColor: [255, 255, 255],
-        },
-        margin: { left: 14, right: 14 },
-        tableLineColor: [203, 213, 225],
-        tableLineWidth: 0.2,
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
       });
-      y = doc.lastAutoTable.finalY + 10;
+
+      const imgData = canvas.toDataURL('image/png');
+
+      const imgWidth = pageWidth - 28;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      doc.addImage(imgData, 'PNG', 14, y, imgWidth, imgHeight);
+
+      y += imgHeight + 10;
+    } catch (e) {
+      console.error('Error al generar gráfica');
     }
+  }
 
-    // Gráfica de progreso como imagen
-    if (chartRef.current) {
-      doc.setFontSize(14);
-      doc.setTextColor('#2563eb');
-      doc.text('Gráfica de progreso', pageWidth / 2, y, { align: 'center' });
-      y += 4;
-      const chartElem = chartRef.current;
-      try {
-        const canvas = await html2canvas(chartElem, { backgroundColor: '#fff', scale: 2 });
-        const imgData = canvas.toDataURL('image/png');
-        const imgProps = doc.getImageProperties(imgData);
-        const imgWidth = pageWidth - 48;
-        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        doc.addImage(imgData, 'PNG', 24, y, imgWidth, imgHeight);
-        y += imgHeight + 8;
-      } catch (err) {
-        // fallback: no image
-      }
-    }
+  // =========================
+  // 📄 FOOTER EN TODAS LAS PÁGINAS
+  // =========================
+  const totalPages = doc.getNumberOfPages();
 
-    // Pie de página
-    doc.setFontSize(10);
-    doc.setTextColor('#64748b');
-    doc.text(`Generado por Rehabia · ${new Date().toLocaleDateString()}`, 14, 290);
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
 
-    doc.save(`historial_${patient.unique_id || 'paciente'}.pdf`);
-  };
+    doc.setFontSize(9);
+    doc.setTextColor(...gray);
+
+    doc.text(
+      `Rehabia · Página ${i} de ${totalPages}`,
+      pageWidth / 2,
+      pageHeight - 10,
+      { align: 'center' }
+    );
+  }
+
+  // =========================
+  // 💾 GUARDAR
+  // =========================
+  doc.save(`reporte_clinico_${patient.unique_id || 'paciente'}.pdf`);
+};
 
   const syncPatient = async (nextPatientId) => {
     const key = nextPatientId.trim().toUpperCase();
