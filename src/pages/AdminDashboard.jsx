@@ -11,6 +11,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Legend,
 } from 'recharts';
 import {
   EXERCISE_CATALOG,
