@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
-import logoImg from '../assets/logo.jpeg'; // Usa tu logo en src/assets/logo.jpeg
+// Logo eliminado del PDF
 import api from '../lib/api';
 import {
   CartesianGrid,
@@ -56,19 +56,7 @@ export default function AdminDashboard() {
     let y = 18;
 
     // Encabezado con logo y título
-    try {
-      // Carga el logo como imagen base64
-      const img = new window.Image();
-      img.src = logoImg;
-      await new Promise((resolve) => { img.onload = resolve; });
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const imgData = canvas.toDataURL('image/jpeg');
-      doc.addImage(imgData, 'JPEG', pageWidth - 50, 8, 32, 16);
-    } catch {}
+    // Logo eliminado del PDF
     doc.setFontSize(22);
     doc.setTextColor('#2563eb');
     doc.text('Historial Clínico', 14, y);
