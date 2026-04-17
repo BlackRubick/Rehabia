@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import logoImg from '../assets/logo.png'; // Asegúrate de tener un logo en assets/logo.png
 import api from '../lib/api';
 import {
   CartesianGrid,
@@ -51,48 +52,95 @@ export default function AdminDashboard() {
   const handleDownloadPDF = async () => {
     if (!patient) return;
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 18;
 
-    // Título
-    doc.setFontSize(18);
-    doc.text('Historial Clínico', 14, 18);
+    // Encabezado con logo y título
+    try {
+      // Si tienes un logo, lo puedes usar así:
+      // doc.addImage(logoImg, 'PNG', pageWidth - 50, 8, 32, 16);
+    } catch {}
+    doc.setFontSize(22);
+    doc.setTextColor('#2563eb');
+    doc.text('Historial Clínico', 14, y);
+    y += 10;
+    doc.setDrawColor('#2563eb');
+    doc.setLineWidth(1);
+    doc.line(14, y, pageWidth - 14, y);
+    y += 6;
 
-    // Datos del paciente
+    // Tarjeta de datos del paciente
+    doc.setFillColor('#f1f5f9');
+    doc.roundedRect(14, y, pageWidth - 28, 28, 4, 4, 'F');
     doc.setFontSize(12);
-    doc.text(`Nombre: ${patient.nombre || ''}`, 14, 30);
-    doc.text(`ID: ${patient.unique_id || ''}`, 14, 38);
-    doc.text(`Lesión: ${patient.lesion || ''}`, 14, 46);
-    doc.text(`Edad: ${patient.edad || ''}`, 14, 54);
+    doc.setTextColor('#0f172a');
+    doc.text(`Nombre:`, 18, y + 8);
+    doc.text(`${patient.nombre || ''}`, 45, y + 8);
+    doc.text(`ID:`, 18, y + 16);
+    doc.text(`${patient.unique_id || ''}`, 45, y + 16);
+    doc.text(`Edad:`, pageWidth / 2, y + 8);
+    doc.text(`${patient.edad || ''}`, pageWidth / 2 + 20, y + 8);
+    doc.text(`Lesión:`, pageWidth / 2, y + 16);
+    doc.text(`${patient.lesion || ''}`, pageWidth / 2 + 20, y + 16);
+    y += 34;
 
     // Tabla de historial de sesiones
+    let tableY = y;
     if (stats.length > 0) {
       autoTable(doc, {
-        startY: 62,
-        head: [['Fecha', 'Correctas', 'Malas', 'Ángulo']],
+        startY: tableY,
+        head: [['Fecha', '✔️ Correctas', '❌ Malas', 'Ángulo']],
         body: stats.map((item) => [
           new Date(item.fecha).toLocaleDateString(),
           item.repeticiones_validas,
           item.repeticiones_invalidas,
           item.angulo_promedio,
         ]),
+        theme: 'striped',
+        styles: {
+          fillColor: [241, 245, 249],
+          textColor: '#0f172a',
+          fontSize: 11,
+        },
+        headStyles: {
+          fillColor: [37, 99, 235],
+          textColor: '#fff',
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [255, 255, 255],
+        },
+        margin: { left: 14, right: 14 },
+        tableLineColor: [203, 213, 225],
+        tableLineWidth: 0.2,
       });
+      y = doc.lastAutoTable.finalY + 10;
     }
 
     // Gráfica de progreso como imagen
     if (chartRef.current) {
+      doc.setFontSize(14);
+      doc.setTextColor('#2563eb');
+      doc.text('Gráfica de progreso', pageWidth / 2, y, { align: 'center' });
+      y += 4;
       const chartElem = chartRef.current;
       try {
         const canvas = await html2canvas(chartElem, { backgroundColor: '#fff', scale: 2 });
         const imgData = canvas.toDataURL('image/png');
-        const pageWidth = doc.internal.pageSize.getWidth();
         const imgProps = doc.getImageProperties(imgData);
-        const imgWidth = pageWidth - 28;
+        const imgWidth = pageWidth - 48;
         const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-        const y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 70;
-        doc.addImage(imgData, 'PNG', 14, y, imgWidth, imgHeight);
+        doc.addImage(imgData, 'PNG', 24, y, imgWidth, imgHeight);
+        y += imgHeight + 8;
       } catch (err) {
         // fallback: no image
       }
     }
+
+    // Pie de página
+    doc.setFontSize(10);
+    doc.setTextColor('#64748b');
+    doc.text(`Generado por Rehabia · ${new Date().toLocaleDateString()}`, 14, 290);
 
     doc.save(`historial_${patient.unique_id || 'paciente'}.pdf`);
   };
