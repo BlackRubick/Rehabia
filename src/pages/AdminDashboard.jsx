@@ -328,8 +328,95 @@ const handleDownloadPDF = async () => {
     [assignedRoutines.length, patient?.lesion, patient?.nombre, progressPct],
   );
 
+  // === Agrupación de estadísticas ===
+  // Agrupa pacientes por género, edad y lesión
+  const getAgeGroup = (edad) => {
+    if (edad < 18) return 'Menor de 18';
+    if (edad < 30) return '18-29';
+    if (edad < 40) return '30-39';
+    if (edad < 50) return '40-49';
+    if (edad < 60) return '50-59';
+    return '60+';
+  };
+
+  // Calcula agrupaciones
+  const statsByGender = useMemo(() => {
+    const counts = {};
+    patients.forEach((p) => {
+      const genero = p.genero || 'No especificado';
+      counts[genero] = (counts[genero] || 0) + 1;
+    });
+    return counts;
+  }, [patients]);
+
+  const statsByAge = useMemo(() => {
+    const counts = {};
+    patients.forEach((p) => {
+      const grupo = getAgeGroup(Number(p.edad));
+      counts[grupo] = (counts[grupo] || 0) + 1;
+    });
+    return counts;
+  }, [patients]);
+
+  const statsByLesion = useMemo(() => {
+    const counts = {};
+    patients.forEach((p) => {
+      const lesion = p.lesion || 'No especificado';
+      counts[lesion] = (counts[lesion] || 0) + 1;
+    });
+    return counts;
+  }, [patients]);
+
+  // Calcula porcentajes
+  const getPercent = (count) => patients.length ? Math.round((count / patients.length) * 100) : 0;
+
   return (
     <main className="mx-auto max-w-6xl space-y-5 px-4 py-8">
+      {/* === Sección de estadísticas agrupadas === */}
+      <section className="medical-card">
+        <h2 className="section-title">Estadísticas de pacientes</h2>
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Género */}
+          <div>
+            <h3 className="font-semibold mb-2 text-[var(--text-main)]">Por género</h3>
+            <ul className="space-y-1">
+              {Object.entries(statsByGender).map(([genero, count]) => (
+                <li key={genero} className="flex justify-between text-sm">
+                  <span>{genero}</span>
+                  <span className="font-semibold">{getPercent(count)}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Edad */}
+          <div>
+            <h3 className="font-semibold mb-2 text-[var(--text-main)]">Por grupo de edad</h3>
+            <ul className="space-y-1">
+              {Object.entries(statsByAge).map(([grupo, count]) => (
+                <li key={grupo} className="flex justify-between text-sm">
+                  <span>{grupo}</span>
+                  <span className="font-semibold">{getPercent(count)}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* Lesión */}
+          <div>
+            <h3 className="font-semibold mb-2 text-[var(--text-main)]">Por tipo de lesión</h3>
+            <ul className="space-y-1">
+              {Object.entries(statsByLesion).map(([lesion, count]) => (
+                <li key={lesion} className="flex justify-between text-sm">
+                  <span>{lesion}</span>
+                  <span className="font-semibold">{getPercent(count)}%</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <p className="mt-4 text-xs text-[var(--text-muted)]">
+          Ejemplo: "{getPercent(statsByGender['Mujer'] || 0)}% son mujeres, {getPercent(statsByAge['30-39'] || 0)}% tienen entre 30 y 39 años, {getPercent(statsByLesion['Rodilla'] || 0)}% tienen lesión de rodilla".
+        </p>
+      </section>
       <section className="medical-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
