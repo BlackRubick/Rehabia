@@ -1,4 +1,6 @@
 from fastapi import Path
+router = APIRouter()
+# ...otros endpoints...
 
 # Eliminar rutina asignada a un paciente
 @router.delete('/patients/{patient_unique_id}/routines/{routine_id}', status_code=204)
