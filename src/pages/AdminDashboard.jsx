@@ -24,6 +24,7 @@ const baseTemplate = EXERCISE_CATALOG[0];
 
 export default function AdminDashboard() {
   // ...existing code...
+  // NOTA: XAxis y YAxis ya no se usan en la sección de estadísticas (solo en el gráfico de progreso)
   // Eliminar rutina asignada
   const handleDeleteRoutine = async (routineId) => {
     if (!patient || !routineId) return;
