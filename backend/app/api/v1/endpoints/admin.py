@@ -1,4 +1,4 @@
-from fastapi import Path
+from fastapi import APIRouter, Depends, HTTPException, Path
 router = APIRouter()
 # ...otros endpoints...
 
