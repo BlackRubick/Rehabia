@@ -14,6 +14,8 @@ import {
   ResponsiveContainer,
   Tooltip,
   Legend,
+  XAxis,
+  YAxis,
 } from 'recharts';
 import {
   EXERCISE_CATALOG,
