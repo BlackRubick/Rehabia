@@ -8,6 +8,8 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  Bar,
+  BarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -370,47 +372,71 @@ const handleDownloadPDF = async () => {
   // Calcula porcentajes
   const getPercent = (count) => patients.length ? Math.round((count / patients.length) * 100) : 0;
 
+
+  // Datos para gráficos
+  const genderChartData = Object.entries(statsByGender).map(([genero, count]) => ({
+    name: genero,
+    value: count,
+    percent: getPercent(count),
+  }));
+  const ageChartData = Object.entries(statsByAge).map(([grupo, count]) => ({
+    name: grupo,
+    value: count,
+    percent: getPercent(count),
+  }));
+  const lesionChartData = Object.entries(statsByLesion).map(([lesion, count]) => ({
+    name: lesion,
+    value: count,
+    percent: getPercent(count),
+  }));
+
   return (
     <main className="mx-auto max-w-6xl space-y-5 px-4 py-8">
-      {/* === Sección de estadísticas agrupadas === */}
+      {/* === Sección de estadísticas agrupadas con gráficos === */}
       <section className="medical-card">
         <h2 className="section-title">Estadísticas de pacientes</h2>
         <div className="grid gap-6 md:grid-cols-3">
           {/* Género */}
           <div>
             <h3 className="font-semibold mb-2 text-[var(--text-main)]">Por género</h3>
-            <ul className="space-y-1">
-              {Object.entries(statsByGender).map(([genero, count]) => (
-                <li key={genero} className="flex justify-between text-sm">
-                  <span>{genero}</span>
-                  <span className="font-semibold">{getPercent(count)}%</span>
-                </li>
-              ))}
-            </ul>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={genderChartData} layout="vertical" margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                <YAxis dataKey="name" type="category" width={90} />
+                <Tooltip formatter={(value, name, props) => `${props.payload.percent}% (${props.payload.value})`} />
+                <Legend />
+                <Bar dataKey="percent" fill="#2563eb" name="Porcentaje" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
           {/* Edad */}
           <div>
             <h3 className="font-semibold mb-2 text-[var(--text-main)]">Por grupo de edad</h3>
-            <ul className="space-y-1">
-              {Object.entries(statsByAge).map(([grupo, count]) => (
-                <li key={grupo} className="flex justify-between text-sm">
-                  <span>{grupo}</span>
-                  <span className="font-semibold">{getPercent(count)}%</span>
-                </li>
-              ))}
-            </ul>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={ageChartData} layout="vertical" margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                <YAxis dataKey="name" type="category" width={90} />
+                <Tooltip formatter={(value, name, props) => `${props.payload.percent}% (${props.payload.value})`} />
+                <Legend />
+                <Bar dataKey="percent" fill="#059669" name="Porcentaje" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
           {/* Lesión */}
           <div>
             <h3 className="font-semibold mb-2 text-[var(--text-main)]">Por tipo de lesión</h3>
-            <ul className="space-y-1">
-              {Object.entries(statsByLesion).map(([lesion, count]) => (
-                <li key={lesion} className="flex justify-between text-sm">
-                  <span>{lesion}</span>
-                  <span className="font-semibold">{getPercent(count)}%</span>
-                </li>
-              ))}
-            </ul>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={lesionChartData} layout="vertical" margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                <YAxis dataKey="name" type="category" width={90} />
+                <Tooltip formatter={(value, name, props) => `${props.payload.percent}% (${props.payload.value})`} />
+                <Legend />
+                <Bar dataKey="percent" fill="#f59e42" name="Porcentaje" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
         <p className="mt-4 text-xs text-[var(--text-muted)]">
