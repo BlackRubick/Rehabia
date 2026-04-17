@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
-import logoImg from '../assets/logo.png'; // Asegúrate de tener un logo en assets/logo.png
+import logoImg from '../assets/logo.jpeg'; // Usa tu logo en src/assets/logo.jpeg
 import api from '../lib/api';
 import {
   CartesianGrid,
@@ -57,8 +57,17 @@ export default function AdminDashboard() {
 
     // Encabezado con logo y título
     try {
-      // Si tienes un logo, lo puedes usar así:
-      // doc.addImage(logoImg, 'PNG', pageWidth - 50, 8, 32, 16);
+      // Carga el logo como imagen base64
+      const img = new window.Image();
+      img.src = logoImg;
+      await new Promise((resolve) => { img.onload = resolve; });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imgData = canvas.toDataURL('image/jpeg');
+      doc.addImage(imgData, 'JPEG', pageWidth - 50, 8, 32, 16);
     } catch {}
     doc.setFontSize(22);
     doc.setTextColor('#2563eb');
