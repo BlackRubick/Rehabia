@@ -1,20 +1,4 @@
 
-  const handleDeletePatient = async () => {
-    if (!patient) return;
-    if (!window.confirm(`¿Seguro que deseas eliminar al paciente ${patient.nombre} (${patient.unique_id})? Esta acción no se puede deshacer.`)) return;
-    try {
-      await api.delete(`/admin/patients/${patient.unique_id}`);
-      setMessage('Paciente eliminado.');
-      setPatient(null);
-      setStats([]);
-      setAssignedRoutines([]);
-      setPatients((prev) => prev.filter((p) => p.unique_id !== patient.unique_id));
-      setPatientId('');
-      setTimeout(() => setMessage(''), 3500);
-    } catch (e) {
-      setMessage(e?.response?.data?.detail || 'No se pudo eliminar el paciente.');
-    }
-  };
 import { useEffect, useMemo, useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -41,6 +25,22 @@ import { useAuth } from '../context/AuthContext';
 
 const baseTemplate = EXERCISE_CATALOG[0];
 
+  const handleDeletePatient = async () => {
+    if (!patient) return;
+    if (!window.confirm(`¿Seguro que deseas eliminar al paciente ${patient.nombre} (${patient.unique_id})? Esta acción no se puede deshacer.`)) return;
+    try {
+      await api.delete(`/admin/patients/${patient.unique_id}`);
+      setMessage('Paciente eliminado.');
+      setPatient(null);
+      setStats([]);
+      setAssignedRoutines([]);
+      setPatients((prev) => prev.filter((p) => p.unique_id !== patient.unique_id));
+      setPatientId('');
+      setTimeout(() => setMessage(''), 3500);
+    } catch (e) {
+      setMessage(e?.response?.data?.detail || 'No se pudo eliminar el paciente.');
+    }
+  };
 export default function AdminDashboard() {
   // ...existing code...
   // NOTA: XAxis y YAxis ya no se usan en la sección de estadísticas (solo en el gráfico de progreso)
