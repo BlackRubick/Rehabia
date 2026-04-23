@@ -1,3 +1,21 @@
+  // Eliminar paciente
+  const handleDeletePatient = async () => {
+    if (!patient) return;
+    if (!window.confirm(`¿Seguro que deseas eliminar al paciente ${patient.nombre} (${patient.unique_id})? Esta acción no se puede deshacer.`)) return;
+    try {
+      await api.delete(`/admin/patients/${patient.unique_id}`);
+      setMessage('Paciente eliminado.');
+      setPatient(null);
+      setStats([]);
+      setAssignedRoutines([]);
+      // Actualizar lista de pacientes
+      setPatients((prev) => prev.filter((p) => p.unique_id !== patient.unique_id));
+      setPatientId('');
+      setTimeout(() => setMessage(''), 3500);
+    } catch (e) {
+      setMessage(e?.response?.data?.detail || 'No se pudo eliminar el paciente.');
+    }
+  };
 import { useEffect, useMemo, useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -537,9 +555,12 @@ const handleDownloadPDF = async () => {
 
       {patient && (
         <>
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-end mb-2 gap-2">
             <button className="btn-primary" onClick={handleDownloadPDF}>
               Descargar PDF
+            </button>
+            <button className="btn-danger" onClick={handleDeletePatient}>
+              Eliminar paciente
             </button>
           </div>
           <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
