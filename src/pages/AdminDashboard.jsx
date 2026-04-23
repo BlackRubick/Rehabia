@@ -1,3 +1,5 @@
+export default function AdminDashboard() {
+  // ...existing code...
   // Eliminar paciente
   const handleDeletePatient = async () => {
     if (!patient) return;
