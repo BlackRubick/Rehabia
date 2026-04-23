@@ -1,6 +1,4 @@
-export default function AdminDashboard() {
-  // ...existing code...
-  // Eliminar paciente
+
   const handleDeletePatient = async () => {
     if (!patient) return;
     if (!window.confirm(`¿Seguro que deseas eliminar al paciente ${patient.nombre} (${patient.unique_id})? Esta acción no se puede deshacer.`)) return;
@@ -708,5 +706,4 @@ const handleDownloadPDF = async () => {
       )}
     </main>
   );
-}
 }
