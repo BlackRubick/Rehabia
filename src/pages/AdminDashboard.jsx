@@ -588,10 +588,19 @@ const handleDownloadPDF = async () => {
             <h2 className="section-title">Asignación de ejercicios</h2>
             <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={assignRoutine}>
               <select className="field" value={selectedExerciseId} onChange={(event) => onExerciseChange(event.target.value)}>
-                {EXERCISE_CATALOG.map((exercise) => (
-                  <option key={exercise.id} value={exercise.id}>
-                    {exercise.nombre_ejercicio}
-                  </option>
+                {Object.entries(EXERCISE_CATALOG.reduce((acc, exercise) => {
+                  const cat = exercise.categoria || 'Sin categoría';
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(exercise);
+                  return acc;
+                }, {})).map(([categoria, ejercicios]) => (
+                  <optgroup key={categoria} label={categoria}>
+                    {ejercicios.map((exercise) => (
+                      <option key={exercise.id} value={exercise.id}>
+                        {exercise.nombre_ejercicio}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               <input className="field" value={routine.nombre_ejercicio} onChange={(event) => setRoutine((prev) => ({ ...prev, nombre_ejercicio: event.target.value }))} />
