@@ -388,13 +388,31 @@ const handleDownloadPDF = async () => {
     return counts;
   }, [patients]);
 
+
+  // Función para normalizar texto (minúsculas, sin acentos, sin espacios extra)
+  const normalizeText = (str) =>
+    (str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
   const statsByLesion = useMemo(() => {
     const counts = {};
+    const labelMap = {};
     patients.forEach((p) => {
-      const lesion = p.lesion || 'No especificado';
-      counts[lesion] = (counts[lesion] || 0) + 1;
+      const raw = p.lesion || 'No especificado';
+      const key = normalizeText(raw);
+      if (!labelMap[key]) labelMap[key] = raw;
+      counts[key] = (counts[key] || 0) + 1;
     });
-    return counts;
+    // Devuelve un objeto con la etiqueta original y el conteo
+    const result = {};
+    Object.entries(counts).forEach(([key, value]) => {
+      result[labelMap[key]] = value;
+    });
+    return result;
   }, [patients]);
 
   // Calcula porcentajes
