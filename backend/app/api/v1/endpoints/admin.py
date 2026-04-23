@@ -1,3 +1,18 @@
+@router.delete('/patients/{patient_unique_id}', status_code=204)
+def delete_patient(
+    patient_unique_id: str,
+    _: object = Depends(require_staff),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.unique_id == patient_unique_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail='Paciente no encontrado')
+    # Eliminar rutinas y sesiones asociadas
+    db.query(Routine).filter(Routine.paciente_id == patient.id).delete()
+    db.query(SessionModel).filter(SessionModel.paciente_id == patient.id).delete()
+    db.delete(patient)
+    db.commit()
+    return None
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
