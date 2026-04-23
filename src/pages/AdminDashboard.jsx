@@ -8,7 +8,6 @@
       setPatient(null);
       setStats([]);
       setAssignedRoutines([]);
-      // Actualizar lista de pacientes
       setPatients((prev) => prev.filter((p) => p.unique_id !== patient.unique_id));
       setPatientId('');
       setTimeout(() => setMessage(''), 3500);
@@ -559,9 +558,15 @@ const handleDownloadPDF = async () => {
             <button className="btn-primary" onClick={handleDownloadPDF}>
               Descargar PDF
             </button>
-            <button className="btn-danger" onClick={handleDeletePatient}>
-              Eliminar paciente
-            </button>
+            {patient && (
+              <button
+                className="btn-danger border border-red-700 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded shadow"
+                style={{ minWidth: 160 }}
+                onClick={handleDeletePatient}
+              >
+                Eliminar paciente
+              </button>
+            )}
           </div>
           <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {dashboardSummary.map((item) => (
