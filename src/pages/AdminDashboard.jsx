@@ -455,14 +455,14 @@ const handleDownloadPDF = async () => {
                   cy="50%"
                   outerRadius={window.innerWidth < 600 ? 70 : 110}
                   labelLine={false}
-                  label={({ name, percent }) => percent > 4 ? `${name}: ${percent}%` : ''}
+                  label={false}
                   paddingAngle={2}
                 >
                   {ageChartData.map((entry, idx) => (
                     <Cell key={`cell-age-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value, name, props) => `${props.payload.percent}% (${props.payload.value})`} />
+                <Tooltip formatter={(value, name, props) => `${props.payload.name}: ${props.payload.percent}% (${props.payload.value})`} />
                 <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: 13, flexWrap: 'wrap', maxWidth: '100%' }} />
               </PieChart>
             </ResponsiveContainer>
@@ -480,14 +480,14 @@ const handleDownloadPDF = async () => {
                   cy="50%"
                   outerRadius={window.innerWidth < 600 ? 70 : 110}
                   labelLine={false}
-                  label={({ name, percent }) => percent > 4 ? `${name}: ${percent}%` : ''}
+                  label={false}
                   paddingAngle={2}
                 >
                   {lesionChartData.map((entry, idx) => (
                     <Cell key={`cell-lesion-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value, name, props) => `${props.payload.percent}% (${props.payload.value})`} />
+                <Tooltip formatter={(value, name, props) => `${props.payload.name}: ${props.payload.percent}% (${props.payload.value})`} />
                 <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: 13, flexWrap: 'wrap', maxWidth: '100%' }} />
               </PieChart>
             </ResponsiveContainer>
