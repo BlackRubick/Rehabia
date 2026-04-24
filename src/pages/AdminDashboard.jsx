@@ -419,6 +419,11 @@ const handleDownloadPDF = async () => {
   const getPercent = (count) => patients.length ? Math.round((count / patients.length) * 100) : 0;
 
 
+  // Paleta de colores extendida y contrastante
+  const PIE_COLORS = [
+    '#2563eb', '#059669', '#f59e42', '#f43f5e', '#a21caf', '#0ea5e9', '#eab308', '#14b8a6', '#6366f1', '#f472b6', '#facc15', '#10b981', '#f87171', '#7c3aed', '#fb7185', '#22d3ee', '#b91c1c', '#fbbf24', '#84cc16', '#0d9488', '#e11d48', '#f97316', '#a3e635', '#fcd34d', '#fca5a5', '#818cf8', '#f9a8d4', '#fde68a', '#bbf7d0', '#fca311', '#14213d', '#e5e5e5', '#22223b', '#9a8c98', '#c9ada7', '#4a4e69', '#22223b', '#f2e9e4', '#cdb4db', '#b5ead7', '#ffdac1', '#ffb7b2', '#ff9a8b', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#b5ead7', '#caffbf', '#fdffb6', '#ffd6a5', '#ffadad', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#b5ead7', '#caffbf', '#fdffb6', '#ffd6a5', '#ffadad', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#b5ead7', '#caffbf', '#fdffb6', '#ffd6a5', '#ffadad', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#b5ead7', '#caffbf', '#fdffb6', '#ffd6a5', '#ffadad', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#b5ead7', '#caffbf', '#fdffb6', '#ffd6a5', '#ffadad', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#b5ead7', '#caffbf', '#fdffb6', '#ffd6a5', '#ffadad', '#9bf6ff',
+  ];
+
   // Datos para gráficos
   const ageChartData = Object.entries(statsByAge).map(([grupo, count]) => ({
     name: grupo,
@@ -440,7 +445,7 @@ const handleDownloadPDF = async () => {
           {/* Edad - PieChart */}
           <div>
             <h3 className="font-semibold mb-2 text-[var(--text-main)]">Por grupo de edad</h3>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" minWidth={220} minHeight={220} height={320}>
               <PieChart>
                 <Pie
                   data={ageChartData}
@@ -448,22 +453,24 @@ const handleDownloadPDF = async () => {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={90}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={window.innerWidth < 600 ? 70 : 110}
+                  labelLine={false}
+                  label={({ name, percent }) => percent > 4 ? `${name}: ${percent}%` : ''}
+                  paddingAngle={2}
                 >
                   {ageChartData.map((entry, idx) => (
-                    <Cell key={`cell-age-${idx}`} fill={["#2563eb","#059669","#f59e42","#f43f5e","#a21caf","#0ea5e9"][idx % 6]} />
+                    <Cell key={`cell-age-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value, name, props) => `${props.payload.percent}% (${props.payload.value})`} />
-                <Legend />
+                <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: 13, flexWrap: 'wrap', maxWidth: '100%' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
           {/* Lesión - PieChart */}
           <div>
             <h3 className="font-semibold mb-2 text-[var(--text-main)]">Por tipo de lesión</h3>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" minWidth={220} minHeight={220} height={320}>
               <PieChart>
                 <Pie
                   data={lesionChartData}
@@ -471,15 +478,17 @@ const handleDownloadPDF = async () => {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={90}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={window.innerWidth < 600 ? 70 : 110}
+                  labelLine={false}
+                  label={({ name, percent }) => percent > 4 ? `${name}: ${percent}%` : ''}
+                  paddingAngle={2}
                 >
                   {lesionChartData.map((entry, idx) => (
-                    <Cell key={`cell-lesion-${idx}`} fill={["#2563eb","#059669","#f59e42","#f43f5e","#a21caf","#0ea5e9"][idx % 6]} />
+                    <Cell key={`cell-lesion-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value, name, props) => `${props.payload.percent}% (${props.payload.value})`} />
-                <Legend />
+                <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: 13, flexWrap: 'wrap', maxWidth: '100%' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
